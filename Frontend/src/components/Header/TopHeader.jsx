@@ -16,6 +16,11 @@ const TopHeader = () => {
     setIsDropdownOpen(false);
   };
 
+    const handleLanguageClick = (lang) => {
+    setSelectedLanguage(lang);
+    setIsLangDropdownOpen(false);
+  };
+
   return (
     <div className="container mx-auto px-4 py-2 flex justify-between items-center">
       <div className="flex items-center space-x-2 text-xs text-gray-600">
