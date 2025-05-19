@@ -1,10 +1,13 @@
-
 import { FaChevronDown, FaSearch, FaStore } from "react-icons/fa";
+import TopHeader from "./TopHeader";
 import { Link } from "react-router-dom";
+import NavigationMenu from "./NavigationMenu";
+import AuthMenu from "./AuthMenu";
 
 const Navbar = () => {
   return (
     <div>
+      <TopHeader />
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-2xl font-bold text-[#FF0000]">
@@ -54,9 +57,12 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-6">
+            
+            <AuthMenu />
           </div>
         </div>
       </div>
+      <NavigationMenu />
     </div>
   );
 };
