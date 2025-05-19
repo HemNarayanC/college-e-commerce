@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import NavigationMenu from "./NavigationMenu";
 import AuthMenu from "./AuthMenu";
 import IconBadge from "../IconBadge";
+import { useState } from "react";
 
 const Navbar = () => {
+    const [searchQuery, setSearchQuery] = useState("");
   return (
     <div>
       <TopHeader />
@@ -45,8 +47,8 @@ const Navbar = () => {
                   type="text"
                   className="w-full pl-4 pr-10 py-2 text-sm outline-none"
                   placeholder="Search products..."
-                  value=""
-                  onChange=""
+                  value={searchQuery}
+                  onChange={(e)=> setSearchQuery(e.target.value)}
                 />
                 <button
                   className="absolute right-0 top-0 h-full px-3 text-gray-500 bg-[#FF0000] rounded-r-md cursor-pointer whitespace-nowrap"
