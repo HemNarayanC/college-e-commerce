@@ -1,13 +1,35 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 
 const AuthMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef(null);
+
+    const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+  };
+
+  /**
+   * Handles the click event to toggle the dropdown menu.
+   */
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div>
+    <div ref={menuRef} className="relative">
       <div className="relative group">
-        <button className="flex flex-col items-center cursor-pointer">
+        <button onClick={toggleDropdown} className="flex flex-col items-center cursor-pointer">
           <FaUserCircle />
           <span className="text-xs mt-1">Account</span>
         </button>
