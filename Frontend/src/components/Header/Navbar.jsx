@@ -1,8 +1,10 @@
-import { FaChevronDown, FaSearch, FaStore } from "react-icons/fa";
+import { FaChevronDown, FaHeart, FaSearch, FaStore } from "react-icons/fa";
+import {FaCartShopping} from "react-icons/fa6";
 import TopHeader from "./TopHeader";
 import { Link } from "react-router-dom";
 import NavigationMenu from "./NavigationMenu";
 import AuthMenu from "./AuthMenu";
+import IconBadge from "../IconBadge";
 
 const Navbar = () => {
   return (
@@ -57,7 +59,21 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-6">
-            
+            {/* WishList Icon */}
+            <IconBadge
+              icon={<FaHeart />}
+              label="Wishlist"
+              count={10}
+              badgePosition="-right-2"
+            />
+            {/* Cart Icon */}
+            <IconBadge
+              icon={<FaCartShopping />}
+              label="Cart"
+              count={10}
+              badgePosition="-right-4"
+            />
+
             <AuthMenu />
           </div>
         </div>
