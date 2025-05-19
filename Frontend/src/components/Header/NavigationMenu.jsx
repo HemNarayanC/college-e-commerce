@@ -12,6 +12,13 @@ const NavigationMenu = () => {
                 {navMenu.map((menu) => {
                   return (
                     <NavLink
+                      className={({ isActive }) =>
+                        `flex text-[15px] text-white ${
+                          isActive
+                            ? "text-red-500"
+                            : "hover:text-gray-100"
+                        }`
+                      }
                       key={menu.route}
                       to={menu.route}
                     >
