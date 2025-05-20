@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaUserCircle } from "react-icons/fa";
+import {
+  FaUser,
+  FaShoppingCart,
+  FaHeart,
+  FaCog,
+  FaSignOutAlt,
+  FaUserCircle,
+} from "react-icons/fa";
 
 const AuthMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
-    const toggleDropdown = () => {
+  const toggleDropdown = () => {
     setIsOpen(!isOpen);
   };
 
@@ -29,7 +36,10 @@ const AuthMenu = () => {
   return (
     <div ref={menuRef} className="relative">
       <div className="relative group">
-        <button onClick={toggleDropdown} className="flex flex-col items-center cursor-pointer">
+        <button
+          onClick={toggleDropdown}
+          className="flex flex-col items-center cursor-pointer"
+        >
           <FaUserCircle />
           <span className="text-xs mt-1">Account</span>
         </button>
@@ -38,35 +48,47 @@ const AuthMenu = () => {
             <div className="py-1">
               <Link
                 to="#"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
+                className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 space-x-2"
               >
-                My Profile
+                <FaUser className="text-gray-600" />
+                <span>My Profile</span>
               </Link>
-              <Link
-                to={"#"}
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
-              >
-                Carts
-              </Link>
+
               <Link
                 to="#"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
+                className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 space-x-2"
               >
-                Wishlist
+                <FaShoppingCart className="text-gray-600" />
+                <span>Carts</span>
               </Link>
+
               <Link
                 to="#"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
+                className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 space-x-2"
               >
-                Settings
+                <FaHeart className="text-gray-600" />
+                <span>Wishlist</span>
               </Link>
+
+              <Link
+                to="#"
+                className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 space-x-2"
+              >
+                <FaCog className="text-gray-600" />
+                <span>Settings</span>
+              </Link>
+
               <hr className="my-1" />
+
               <Link
                 to="#"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
-                onClick=""
+                className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 space-x-2"
+                onClick={() => {
+                  // add your logout logic here
+                }}
               >
-                Logout
+                <FaSignOutAlt className="text-gray-600" />
+                <span>Logout</span>
               </Link>
             </div>
           </div>
