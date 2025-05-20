@@ -1,11 +1,12 @@
 
+import ProductCarousel from "./ProductCarousel";
 
 const HeroSection = () => {
   return (
     <div>
-      {" "}
       <section className="relative overflow-hidden flex flex-row-reverse w-full">
         <div className="w-[50%]">
+        <ProductCarousel />
           {/* <img
             src="https://img.freepik.com/free-photo/laptop-shopping-bags-online-shopping-concept_1423-189.jpg?ga=GA1.1.338286829.1745501069&semt=ais_hybrid&w=740"
             alt="Hero Banner"
