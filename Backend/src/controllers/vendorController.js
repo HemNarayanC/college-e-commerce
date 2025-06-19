@@ -14,4 +14,20 @@ const registerVendor = async (req, res) => {
   }
 };
 
-export { registerVendor };
+const loginVendor = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const { token, user, vendor } = await vendorService.loginVendor({email, password}, res);
+
+    res.status(200).json({
+      message: "Vendor logged in successfully",
+      token,
+      user,
+      vendor,
+    });
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+};
+
+export { registerVendor, loginVendor };
