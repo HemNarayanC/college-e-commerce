@@ -54,4 +54,17 @@ const getProductById = async (req, res) => {
   }
 };
 
-export { addProduct, listProductsHandler, getProductById };
+/** Soft-Delete or Toggle product status (active/inactive) */
+const toggleProductStatus = async (req, res) => {
+    const vendorId = req.user.vendorId;
+    const productId = req.params.id; // product ID from URL
+    const productStatus = req.body.status; // product status from request body
+  try {
+    const product = await productService.toggleProductStatus(vendorId, productId, productStatus);
+    res.status(200).json({ message: "Status updated", product });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export { addProduct, listProductsHandler, getProductById, toggleProductStatus };
