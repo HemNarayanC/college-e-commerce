@@ -1,3 +1,6 @@
+import mongoose, { Types } from "mongoose";
+import { EMAIL_REGEX } from "../constants/regex.js";
+
 const VendorSchema = new mongoose.Schema({
   userId: { type: Types.ObjectId, ref: "User", unique: true, required: true },
   businessName: { type: String, required: true, trim: true },
@@ -15,11 +18,6 @@ const VendorSchema = new mongoose.Schema({
       },
       message: "Invalid email address",
     },
-  },
-  businessType: {
-    type: String,
-    required: true,
-    enum: ["retail", "wholesale", "manufacturer", "distributor", "service"],
   },
   governmentId: { type: String, required: true, unique: true, trim: true },
   businessLicense: { type: String, required: true, unique: true },
@@ -39,3 +37,5 @@ const VendorSchema = new mongoose.Schema({
   commissionRate: { type: Number, default: 0.1, min: 0, max: 1 },
   createdAt: { type: Date, default: Date.now },
 });
+
+export default mongoose.model("Vendor", VendorSchema);
