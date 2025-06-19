@@ -90,10 +90,29 @@ const toggleProductStatus = async (vendorId, productId, status) => {
   return product;
 };
 
+const searchProducts = async (queryString, { page = 1, limit = 20 }) => {
+  const regex = new RegExp(queryString, "i");
+  const skip = (page - 1) * limit;
+
+  const query = {
+    status: "active",
+    $or: [{ name: regex }, { description: regex }, { comfortTags: regex }, { slug: regex }],
+  };
+
+  const total = await Product.countDocuments(query);
+  const products = await Product.find(query)
+    .skip(skip)
+    .limit(limit)
+    .populate("vendorId", "businessName")
+    .populate("categoryId", "name");
+
+  return { total, page, limit, products };
+};
 
 export default {
   addProduct,
   listProducts,
   getProductById,
   toggleProductStatus,
+  searchProducts
 };
