@@ -109,10 +109,28 @@ const searchProducts = async (queryString, { page = 1, limit = 20 }) => {
   return { total, page, limit, products };
 };
 
+const deleteProduct = async (vendorId, productId) => {
+  const product = await Product.findOneAndDelete({ _id: productId, vendorId });
+  if (!product) throw new Error("Product not found or unauthorized");
+  return product;
+};
+
+const updateProduct = async (vendorId, productId, updates) => {
+  const product = await Product.findOneAndUpdate(
+    { _id: productId, vendorId },  // Query filter
+    updates,                        // Update data (fields to change)
+    { new: true, runValidators: true }  // Options
+  );
+  if (!product) throw new Error("Product not found or unauthorized");
+  return product;
+};
+
 export default {
   addProduct,
   listProducts,
   getProductById,
   toggleProductStatus,
-  searchProducts
+  searchProducts,
+  deleteProduct,
+  updateProduct
 };
