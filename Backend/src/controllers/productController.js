@@ -87,4 +87,32 @@ const searchProductsController = async (req, res) => {
   }
 };
 
-export { addProduct, listProductsHandler, getProductById, toggleProductStatus , searchProductsController };
+// Delete a product permanently by vendor only
+const deleteProduct = async (req, res) => {
+  try {
+    await productService.deleteProduct(req.user.vendorId, req.params.id);
+    res.status(200).json({ message: "Product deleted" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const updateProduct = async (req, res) => {
+  try {
+    const product = await productService.updateProduct(req.user.vendorId, req.params.id, req.body);
+    res.status(200).json({ message: "Product updated", product });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+const listVendorProducts = async (req, res) => {
+  try {
+    const products = await productService.listVendorProducts(req.user.vendorId);
+    res.status(200).json(products);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export { addProduct, listProductsHandler, getProductById, toggleProductStatus , searchProductsController, deleteProduct, updateProduct, listVendorProducts };
