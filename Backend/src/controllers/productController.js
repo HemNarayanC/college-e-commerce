@@ -67,4 +67,24 @@ const toggleProductStatus = async (req, res) => {
   }
 };
 
-export { addProduct, listProductsHandler, getProductById, toggleProductStatus };
+const searchProductsController = async (req, res) => {
+  try {
+    const queryString = req.query.q || ""; // search keywords from query param `q`
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+
+    const result = await productService.searchProducts(queryString, { page, limit });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to search products",
+    });
+  }
+};
+
+export { addProduct, listProductsHandler, getProductById, toggleProductStatus , searchProductsController };
