@@ -1,5 +1,8 @@
 import Vendor from "../models/Vendor.js";
 import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { createToken } from "../utils/authToken.js";
 
 const registerVendor = async (userId, vendorData) => {
   // Check if user exists
@@ -48,6 +51,47 @@ const registerVendor = async (userId, vendorData) => {
   return vendor;
 };
 
+const loginVendor = async ({ email, password }, res) => {
+  const vendor = await Vendor.findOne({ email });
+  if (!vendor) throw new Error("Vendor not found with this email.");
+
+  const user = await User.findById(vendor.userId);
+  if (!user) throw new Error("Linked user not found.");
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) throw new Error("Invalid password.");
+
+  if (vendor.status !== "approved") {
+    throw new Error("Vendor registration is still pending approval.");
+  }
+
+  const token = createToken({ id: user._id, role: "vendor", vendorId: vendor._id });
+    res.cookie("vendorToken", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "Strict",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  return {
+    token: `Bearer ${token}`,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email, // original user email
+      role: "vendor",
+    },
+    vendor: {
+      id: vendor._id,
+      email: vendor.email, // vendor email
+      businessName: vendor.businessName,
+      status: vendor.status,
+    },
+  };
+};
+
+
 export default {
-  registerVendor
+  registerVendor,
+  loginVendor,
 };
