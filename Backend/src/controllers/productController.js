@@ -39,4 +39,19 @@ const listProductsHandler = async (req, res) => {
   }
 };
 
-export { addProduct, listProductsHandler };
+//Fetch single product by ID
+const getProductById = async (req, res) => {
+  const productId = req.params.id;
+  if (!productId) {
+    return res.status(400).json({ error: "Product ID is required" });
+  }
+  try {
+    const product = await productService.getProductById(productId);
+    console.log("Fetched product:", product);
+    res.status(200).json(product);
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+};
+
+export { addProduct, listProductsHandler, getProductById };
