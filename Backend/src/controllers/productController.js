@@ -8,6 +8,17 @@ const addProduct = async (req, res) => {
     const productData = req.body;
     // console.log("Adding product for vendor:", vendorId, "with data:", productData);
 
+    if (typeof productData.comfortTags === 'string') {
+      productData.comfortTags = JSON.parse(productData.comfortTags);
+    }
+
+    if (typeof productData.variants === 'string') {
+      productData.variants = JSON.parse(productData.variants);
+    }
+
+    // Extract Cloudinary image URLs and add to productData
+    productData.images = req.files?.map(file => file.path) || [];
+
     const savedProduct = await productService.addProduct(vendorId, productData);
 
     res.status(201).json({
