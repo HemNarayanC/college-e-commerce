@@ -13,13 +13,15 @@ const register = async (req, res) => {
         });
     }
 
+    const userProfileImage = req.file ? req.file.path : null;
+
     const user = await authService.registerUser({
       name,
       email,
       password,
       phone,
       role,
-      profileImage,
+      profileImage: userProfileImage,
     });
 
     // Remove sensitive info before sending response
@@ -43,26 +45,23 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Input validation
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password are required.",
       });
     }
 
-    // Call login service
-    const { user, token } = await authService.loginUser({ email, password });
+    const { user, token } = await authService.loginUser({ email, password }, res);
 
-    // Remove sensitive info before response
     const userResponse = user.toObject();
     delete userResponse.passwordHash;
 
-    // Send response with token
     res.status(200).json({
       message: "Login successful",
       token,
       user: userResponse,
     });
+
   } catch (error) {
     res.status(error.statusCode || 500).json({
       message: error.message || "Login failed",
