@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { getProductById } from "../api/productApi";
-import { placeOrder } from "../api/ordersApi";
+import { initiateKhalti, placeOrder, verifyKhalti } from "../api/ordersApi";
 import {
   FaArrowLeft,
   FaCreditCard,
@@ -48,7 +48,7 @@ const KhaltiButton = ({ amount, onSuccess }) => {
       ) : (
         <div className="flex items-center justify-center gap-3">
           <FaCreditCard className="text-xl" />
-          <span>Pay Rs.  {amount.toLocaleString()} with Khalti</span>
+          <span>Pay Rs. {amount.toLocaleString()} with Khalti</span>
         </div>
       )}
     </button>
@@ -92,13 +92,6 @@ const CheckoutPage = () => {
       icon: FaCreditCard,
       color: "bg-purple-600",
     },
-    {
-      id: "card",
-      name: "Credit Card",
-      icon: FaCreditCard,
-      color: "bg-blue-500",
-    },
-    { id: "paypal", name: "PayPal", icon: FaCcPaypal, color: "bg-blue-600" },
   ];
 
   useEffect(() => {
@@ -186,33 +179,64 @@ const CheckoutPage = () => {
   const handlePlaceOrder = async (method) => {
     setOrderProcessing(true);
     try {
-      let payload;
-      if (checkoutType === "single") {
-        const item = products[0];
-        payload = {
-          productId: item.product._id,
-          variantId: item.variant?._id || null,
+      const shippingAddress = {
+        line1: formData.address,
+        city: formData.city,
+        zip: formData.zipCode,
+      };
+
+      const items = products.map((item) => ({
+        productId: item.product._id,
+        quantity: item.quantity,
+        variant: item.variant?.color ? { color: item.variant.color } : null,
+      }));
+
+      const totalAmount = products.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      let payload = {
+        items,
+        paymentMethod: method,
+        shippingAddress,
+        totalAmount,
+      };
+
+      if (method === "khalti") {
+        const khaltiProducts = products.map((item) => ({
+          identity: item.product._id.toString(),
+          name: item.product.name,
+          total_price: item.price * item.quantity,
           quantity: item.quantity,
-          paymentMethod: method,
-          shippingInfo: formData,
-        };
-      } else {
-        payload = {
-          items: products.map((item) => ({
-            productId: item.product._id,
-            variantId: item.variant?._id || null,
-            quantity: item.quantity,
-            cartId: item.cartId,
-          })),
-          paymentMethod: method,
-          shippingInfo: formData,
-        };
+          unit_price: item.price,
+        }));
+
+        console.log("Khalti initiate payload:", {
+          amount: totalAmount,
+          products: khaltiProducts,
+        });
+
+        const { pidx, payment_url } = await initiateKhalti(
+          { amount: totalAmount, products: khaltiProducts },
+          token
+        );
+
+        // ✅ Store info in localStorage for verification page
+        localStorage.setItem("khaltiPidx", pidx);
+        localStorage.setItem("khaltiAmount", totalAmount); // convert to paisa
+        localStorage.setItem("auth_token", token);
+
+        // ✅ Redirect user to Khalti payment page
+        window.location.href = payment_url;
+        return; // stop here, verification will happen on return_url
       }
+
+      // For other payment methods
       await placeOrder(payload, token);
       setShowSuccess(true);
     } catch (err) {
-      console.error("Order failed:", err);
-      alert("Order failed. Try again.");
+      alert(err.message || "Order failed. Try again.");
     } finally {
       setOrderProcessing(false);
     }
@@ -323,7 +347,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
@@ -630,7 +654,7 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t border-gray-200">
                   <span>Total</span>
-                  <span>Rs.  {finalTotal.toLocaleString()}</span>
+                  <span>Rs. {finalTotal.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -653,7 +677,7 @@ const CheckoutPage = () => {
                 ) : (
                   <div className="flex items-center justify-center">
                     <FaLock className="mr-2" />
-                    Complete Order - Rs.  {finalTotal.toLocaleString()}
+                    Complete Order - Rs. {finalTotal.toLocaleString()}
                   </div>
                 )}
               </button>
