@@ -1,9 +1,12 @@
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
+import notificationService from "./notificationService.js";
+import Payout from "../models/Payout.js";
+import User from "../models/User.js";
 
 const createOrder = async (userId, orderData) => {
-  const { items, paymentMethod, shippingAddress } = orderData;
+  const { items, paymentMethod, shippingAddress, totalAmount } = orderData;
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("Order must include at least one item.");
@@ -18,7 +21,7 @@ const createOrder = async (userId, orderData) => {
     throw new Error("Valid shipping address and payment method are required.");
   }
 
-  let totalAmount = 0;
+  let computedTotalAmount = 0;
   const orderItems = [];
   const paymentSplitMap = new Map();
 
@@ -34,12 +37,11 @@ const createOrder = async (userId, orderData) => {
       throw new Error(`Product not found for ID: ${productId}`);
     }
 
-    let finalPrice,
-      availableStock,
-      updatedVariant = null;
+    let finalPrice;
+    let updatedVariant = null;
 
+    // Variant case
     if (variant?.color) {
-      // Find selected variant
       const matchedVariant = product.variants.find(
         (v) => v.color === variant.color
       );
@@ -56,39 +58,48 @@ const createOrder = async (userId, orderData) => {
         );
       }
 
-      // Deduct stock and update
+      if (product.stock < quantity) {
+        throw new Error(`Insufficient total stock for "${product.name}"`);
+      }
+
+      // Deduct both variant and total stock
       matchedVariant.stock -= quantity;
-      finalPrice = matchedVariant.price;
-      availableStock = matchedVariant.stock;
-      updatedVariant = matchedVariant;
+      product.stock -= quantity;
+      product.markModified("variants");
+
+      finalPrice =
+        typeof matchedVariant.price === "number"
+          ? matchedVariant.price
+          : product.price;
+
+      updatedVariant = {
+        color: matchedVariant.color,
+        price: matchedVariant.price ?? product.price,
+        stock: matchedVariant.stock,
+      };
     } else {
-      // No variant selected — use base stock
+      // Base product case
       if (product.stock < quantity) {
         throw new Error(`Insufficient stock for "${product.name}"`);
       }
 
+      // Deduct only total stock
       product.stock -= quantity;
       finalPrice = product.price;
     }
 
     const itemTotal = finalPrice * quantity;
-    totalAmount += itemTotal;
+    computedTotalAmount += itemTotal;
 
     orderItems.push({
       productId: product._id,
       vendorId: product.vendorId,
       quantity,
       price: finalPrice,
-      variant: updatedVariant
-        ? {
-            color: updatedVariant.color,
-            price: updatedVariant.price,
-            stock: updatedVariant.stock,
-          }
-        : undefined,
+      variant: updatedVariant || undefined,
     });
 
-    // Commission and vendor payout
+    // Commission & Vendor payout
     const platformFee = product.commissionRate
       ? product.commissionRate * itemTotal
       : 0;
@@ -111,6 +122,11 @@ const createOrder = async (userId, orderData) => {
     await product.save();
   }
 
+  // Check if totalAmount from client matches computed total to avoid tampering
+  if (totalAmount && Math.abs(totalAmount - computedTotalAmount) > 0.01) {
+    throw new Error("Total amount mismatch.");
+  }
+
   const paymentSplit = Array.from(paymentSplitMap.entries()).map(
     ([vendorId, data]) => ({
       vendorId,
@@ -122,26 +138,53 @@ const createOrder = async (userId, orderData) => {
 
   const order = new Order({
     userId,
-    totalAmount,
+    totalAmount: computedTotalAmount,
     paymentMethod,
     shippingAddress,
     items: orderItems,
     paymentSplit,
+    status: paymentMethod === "cod" ? "pending" : "paid", // For Khalti, mark paid after verification in controller
   });
 
   await order.save();
+
+  await notificationService.dispatchNotificationByType("order_placed", order);
+
   return order;
 };
 
 const fetchVendorOrders = async (vendorId) => {
   const orders = await Order.find({ "items.vendorId": vendorId })
+    .sort({ orderDate: -1 })
     .populate("items.productId", "name price")
     .populate("userId", "name email");
 
+  const productSalesMap = {};
+
   return orders.map((order) => {
-    const vendorItems = order.items.filter(
-      (item) => item.vendorId.toString() === vendorId.toString()
-    );
+    const vendorItems = order.items
+      .filter((item) => item.vendorId.toString() === vendorId.toString())
+      .map((item) => {
+        const productId = item.productId?._id?.toString();
+        if (productId) {
+          if (!productSalesMap[productId]) {
+            productSalesMap[productId] = 0;
+          }
+          productSalesMap[productId] += item.quantity;
+        }
+
+        return {
+          ...item.toObject(),
+          totalSold: productSalesMap[productId] || 0,
+        };
+      });
+
+    // ✅ Calculate subtotal only for this vendor's items
+    const vendorTotal = vendorItems.reduce((acc, item) => {
+      const price = item.productId?.price || 0;
+      return acc + price * item.quantity;
+    }, 0);
+
     const vendorSplit = order.paymentSplit.find(
       (split) => split.vendorId.toString() === vendorId.toString()
     );
@@ -149,67 +192,22 @@ const fetchVendorOrders = async (vendorId) => {
     return {
       orderId: order._id,
       orderDate: order.orderDate,
-      totalAmount: order.totalAmount,
+      totalAmount: vendorTotal, // ✅ Only this vendor's product total
       status: order.status,
       paymentMethod: order.paymentMethod,
       shippingAddress: order.shippingAddress,
       items: vendorItems,
       vendorPayout: vendorSplit?.amount || 0,
+      user: order.userId,
     };
   });
 };
 
-const updateOrderItemStatus = async (vendorId, orderId, productId, newStatus) => {
-  const allowedStatuses = ["processing", "shipped", "delivered", "paid", "cancelled"];
-  if (!allowedStatuses.includes(newStatus)) {
-    throw new Error("Invalid item status.");
-  }
-
-  // Fetch the order
-  const order = await Order.findById(orderId);
-  if (!order) throw new Error("Order not found");
-
-  let itemFound = false;
-
-  // Update itemStatus for matching vendorId & productId
-  order.items = order.items.map(item => {
-    if (
-      item.vendorId.toString() === vendorId.toString() &&
-      item.productId.toString() === productId.toString()
-    ) {
-      item.itemStatus = newStatus;
-      itemFound = true;
-    }
-    return item;
-  });
-
-  if (!itemFound) {
-    throw new Error("No matching item found for this vendor in the order.");
-  }
-
-  // Optional: After updating itemStatus, you may update overall order status:
-  // e.g., if all items itemStatus === 'delivered', set order.status = 'delivered'
-  const allDelivered = order.items.every(i => i.itemStatus === "delivered");
-  const anyCancelled = order.items.some(i => i.itemStatus === "cancelled");
-  if (allDelivered) {
-    order.status = "delivered";
-  } else if (anyCancelled && order.status !== "cancelled") {
-    // If some item cancelled and you want to reflect overall cancellation:
-    // Decide business logic: you might keep overall status separate
-    order.status = "cancelled";
-  }
-  // keep overall status as is, or set to 'shipped' if all shipped, etc.
-  const allShipped = order.items.every(i => ["shipped", "delivered"].includes(i.itemStatus));
-  if (allShipped && !allDelivered) {
-    order.status = "shipped";
-  }
-
-  await order.save();
-  return order;
-};
 
 export default {
   createOrder,
   fetchVendorOrders,
   updateOrderItemStatus,
+  getUserOrders,
+  confirmDeliveryAndReleasePayout,
 };
