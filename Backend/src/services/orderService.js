@@ -203,6 +203,171 @@ const fetchVendorOrders = async (vendorId) => {
   });
 };
 
+const updateOrderItemStatus = async (
+  vendorId,
+  orderId,
+  productId,
+  newStatus
+) => {
+  const allowedStatuses = ["processing", "shipped", "delivered", "cancelled"];
+  if (!allowedStatuses.includes(newStatus.toLowerCase().trim())) {
+    throw new Error("Invalid item status.");
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error("Order not found");
+  console.log("items are ", order.items);
+
+  let itemFound = false;
+
+  // Normalize the newStatus string
+  const normalizedStatus = newStatus.toLowerCase().trim();
+
+  // Update only the matching item
+  order.items = order.items.map((item) => {
+    if (
+      item.vendorId.toString() === vendorId.toString() &&
+      item.productId.toString() === productId.toString()
+    ) {
+      item.itemStatus = normalizedStatus;
+      itemFound = true;
+    }
+    return item;
+  });
+
+  if (!itemFound) {
+    throw new Error("Item not found for vendor and product");
+  }
+
+  // Debug log actual statuses
+  console.log("Updated item statuses:");
+  order.items.forEach((item, idx) =>
+    console.log(`Item ${idx}: status=${item.itemStatus}`)
+  );
+
+  // Determine overall order status based on item statuses
+  // Filter items that belong to this vendor only
+  const vendorItems = order.items.filter(
+    (item) => item.vendorId.toString() === vendorId.toString()
+  );
+
+  // Recalculate overall order status based on only vendor's items
+  const allDelivered = vendorItems.every(
+    (i) => (i.itemStatus || "").toLowerCase() === "delivered"
+  );
+  const allCancelled = vendorItems.every(
+    (i) => (i.itemStatus || "").toLowerCase() === "cancelled"
+  );
+  const allShippedOrDelivered = vendorItems.every((i) =>
+    ["shipped", "delivered"].includes((i.itemStatus || "").toLowerCase())
+  );
+
+  if (allDelivered) {
+    order.status = "delivered";
+  } else if (allCancelled) {
+    order.status = "cancelled";
+  } else if (allShippedOrDelivered) {
+    order.status = "shipped";
+  } else {
+    order.status = "processing";
+  }
+
+  await order.save();
+  return order;
+};
+
+const getUserOrders = async (userId) => {
+  const orders = await Order.find({ userId })
+    .sort({ orderDate: -1 })
+    .populate("items.productId", "name images");
+  return orders;
+};
+
+const confirmDeliveryAndReleasePayout = async (
+  orderId,
+  productId,
+  vendorId
+) => {
+  if (!orderId || !productId || !vendorId) {
+    throw new Error("orderId, productId and vendorId are required");
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error("Order not found");
+
+  const item = order.items.find(
+    (i) =>
+      i.productId.toString() === productId && i.vendorId.toString() === vendorId
+  );
+
+  if (!item) throw new Error("Order item not found for vendor and product");
+  if (item.itemStatus === "delivered") {
+    throw new Error("Item already marked as delivered");
+  }
+
+  item.itemStatus = "delivered";
+
+  const allVendorItemsDelivered = order.items
+    .filter((i) => i.vendorId.toString() === vendorId)
+    .every((i) => i.itemStatus === "delivered");
+
+  if (allVendorItemsDelivered) {
+    const split = order.paymentSplit.find(
+      (p) => p.vendorId.toString() === vendorId
+    );
+    if (!split) throw new Error("Payment split info not found for vendor");
+
+    const existingPayout = await Payout.findOne({
+      vendorId,
+      referenceId: orderId,
+    });
+
+    if (existingPayout) {
+      throw new Error("Payout already released for this order and vendor");
+    }
+
+    const payout = new Payout({
+      vendorId,
+      amount: split.amount,
+      payoutDate: new Date(),
+      status: "completed",
+      referenceId: orderId,
+    });
+
+    await payout.save();
+
+    await notificationService.dispatchNotificationByType(
+      "vendor_payout_released",
+      {
+        vendorId,
+        orderId,
+        amount: split.amount,
+      }
+    );
+  }
+
+  await order.save();
+
+  const allItemsDelivered = order.items.every(
+    (i) => i.itemStatus === "delivered"
+  );
+
+  if (allItemsDelivered) {
+    order.status = "delivered";
+    await order.save();
+
+    const customer = await User.findById(order.userId);
+    if (customer) {
+      await notificationService.dispatchNotificationByType("order_delivered", {
+        _id: order._id,
+        userId: customer._id,
+        paymentSplit: order.paymentSplit,
+      });
+    }
+  }
+
+  return order;
+};
 
 export default {
   createOrder,
