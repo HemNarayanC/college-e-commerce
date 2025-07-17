@@ -3,6 +3,9 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createToken } from "../utils/authToken.js";
+import mongoose from "mongoose";
+import Product from "../models/Product.js";
+import VendorFeedback from "../models/VendorFeedback.js";
 
 const registerVendor = async (userId, vendorData) => {
   // Check if user exists
@@ -53,6 +56,7 @@ const registerVendor = async (userId, vendorData) => {
 
 const loginVendor = async ({ email, password }, res) => {
   const vendor = await Vendor.findOne({ email });
+  console.log("Vendor login", vendor)
   if (!vendor) throw new Error("Vendor not found with this email.");
 
   const user = await User.findById(vendor.userId);
@@ -66,12 +70,13 @@ const loginVendor = async ({ email, password }, res) => {
   }
 
   const token = createToken({ id: user._id, role: "vendor", vendorId: vendor._id });
-    res.cookie("vendorToken", token, {
+    res.cookie("userToken", token, {
     httpOnly: true,
     secure: false,
     sameSite: "Strict",
     maxAge: 24 * 60 * 60 * 1000,
   });
+  console.log(token)
 
   return {
     token: `Bearer ${token}`,
@@ -90,8 +95,44 @@ const loginVendor = async ({ email, password }, res) => {
   };
 };
 
+const getVendorById = async (vendorId) => {
+  if (!mongoose.Types.ObjectId.isValid(vendorId)) {
+    throw new Error("Invalid vendor ID");
+  }
+
+  const vendor = await Vendor.findById(vendorId).lean();
+
+  if (!vendor) return null;
+
+  // Aggregate related stats (e.g. product count, avg rating)
+  const [productCount, feedbackStats] = await Promise.all([
+    Product.countDocuments({ vendorId }),
+    VendorFeedback.aggregate([
+      { $match: { vendorId: new mongoose.Types.ObjectId(vendorId) } },
+      {
+        $group: {
+          _id: "$vendorId",
+          avgRating: { $avg: "$rating" },
+          reviewCount: { $sum: 1 },
+        },
+      },
+    ]),
+  ]);
+
+  const stats = feedbackStats[0] || { avgRating: 0, reviewCount: 0 };
+
+  return {
+    ...vendor,
+    stats: {
+      productCount,
+      averageRating: parseFloat(stats.avgRating?.toFixed(1)) || 0,
+      reviewCount: stats.reviewCount,
+    },
+  };
+};
 
 export default {
   registerVendor,
   loginVendor,
+  getVendorById
 };
