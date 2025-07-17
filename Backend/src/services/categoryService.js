@@ -9,6 +9,12 @@ const addCategory = async (name) => {
   return await category.save();
 };
 
+const getAllCategories = async () => {
+  return await Category.find().sort({ name: 1 });
+};
+
+
 export default {
   addCategory,
+  getAllCategories
 };
