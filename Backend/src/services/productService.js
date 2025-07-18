@@ -9,47 +9,57 @@ const addProduct = async (vendorId, productData) => {
     categoryId,
     description,
     price,
-    stock,
+    stock = 0, // base stock
     comfortTags,
     images,
     variants,
-    commissionRate,
+    // commissionRate,
   } = productData;
 
-  // Check if category exists
   const categoryExists = await Category.findById(categoryId);
   if (!categoryExists) throw new Error("Category not found");
 
-  // Create product
+  // Total variant stock
+  const variantStock = Array.isArray(variants)
+    ? variants.reduce((sum, v) => sum + Number(v.stock || 0), 0)
+    : 0;
+
+  // Total product stock = base + variant
+  const totalStock = Number(stock) + variantStock;
+
   const product = new Product({
     vendorId,
     name,
     slug,
     categoryId,
     description,
-    price,
-    stock,
+    price: Number(price),
+    stock: totalStock,
     comfortTags,
     images,
     variants,
-    commissionRate,
+    // commissionRate: Number(commissionRate || 0),
   });
 
   return await product.save();
 };
 
-const listProducts = async ({ page = 1, limit = 20, filters = {} }) => {
+const listProducts = async ({ page = 1, limit = 20, filters = {}, sortBy }) => {
   const skip = (page - 1) * limit;
   const query = { status: "active", ...filters };
 
-  // Count total documents
+  let sort = {};
+  if (sortBy) {
+    const direction = sortBy.startsWith("-") ? -1 : 1;
+    const field = sortBy.replace("-", "");
+    sort = { [field]: direction };
+  } else {
+    sort = { createdAt: -1 };
+  }
+
   const total = await Product.countDocuments(query);
 
-  // Fetch paginated products
-  const products = await Product.find(query)
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 }); // optional: sort newest first
+  const products = await Product.find(query).skip(skip).limit(limit).sort(sort);
 
   return {
     totalItems: total,
@@ -73,7 +83,10 @@ const getProductById = async (productId) => {
 };
 
 const toggleProductStatus = async (vendorId, productId, status) => {
-  if (!mongoose.Types.ObjectId.isValid(productId) || !mongoose.Types.ObjectId.isValid(vendorId)) {
+  if (
+    !mongoose.Types.ObjectId.isValid(productId) ||
+    !mongoose.Types.ObjectId.isValid(vendorId)
+  ) {
     throw new Error("Invalid ID format");
   }
 
@@ -96,7 +109,12 @@ const searchProducts = async (queryString, { page = 1, limit = 20 }) => {
 
   const query = {
     status: "active",
-    $or: [{ name: regex }, { description: regex }, { comfortTags: regex }, { slug: regex }],
+    $or: [
+      { name: regex },
+      { description: regex },
+      { comfortTags: regex },
+      { slug: regex },
+    ],
   };
 
   const total = await Product.countDocuments(query);
@@ -116,13 +134,43 @@ const deleteProduct = async (vendorId, productId) => {
 };
 
 const updateProduct = async (vendorId, productId, updates) => {
+  if (updates.categoryId) {
+    const categoryExists = await Category.findById(updates.categoryId);
+    if (!categoryExists) throw new Error("Category not found");
+  }
+
+  const variantStock = Array.isArray(updates.variants)
+    ? updates.variants.reduce((sum, v) => sum + Number(v.stock || 0), 0)
+    : 0;
+
+  const baseStock = Number(updates.stock || 0);
+  updates.stock = baseStock + variantStock;
+
+  updates.price = Number(updates.price || 0);
+  updates.commissionRate = Number(updates.commissionRate || 0);
+
   const product = await Product.findOneAndUpdate(
-    { _id: productId, vendorId },  // Query filter
-    updates,                        // Update data (fields to change)
-    { new: true, runValidators: true }  // Options
+    { _id: productId, vendorId },
+    updates,
+    { new: true, runValidators: true }
   );
+
   if (!product) throw new Error("Product not found or unauthorized");
+
   return product;
+};
+
+const listVendorProducts = async (vendorId) => {
+  return await Product.find({ vendorId })
+    .populate("categoryId", "name")
+    .sort("-createdAt");
+};
+
+const getProductsByVendor = async (vendorId) => {
+  return await Product.find({ vendorId })
+    .populate("categoryId")
+    .populate("vendorId")
+    .sort("-createdAt");
 };
 
 export default {
@@ -132,5 +180,7 @@ export default {
   toggleProductStatus,
   searchProducts,
   deleteProduct,
-  updateProduct
+  updateProduct,
+  listVendorProducts,
+  getProductsByVendor,
 };
