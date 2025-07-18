@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import AddProductModal from "../modals/AddProductModal";
 import OrderDetailsModal from "../modals/OrderDetailsModal";
 import { getVendorDashboardData } from "../../api/vendorDashboardApi";
-import { getProductsByVendor } from "../../api/productApi";
+import { deleteProduct, getProductsByVendor } from "../../api/productApi";
 import { getVendorById } from "../../api/vendorApi";
 import { getVendorOrders } from "../../api/ordersApi";
 
@@ -29,7 +29,7 @@ const VendorDashboard = () => {
   const token = useSelector((state) => state.auth.auth_token);
   const vendor = useSelector((state) => state.auth.vendor);
   const vendorId = vendor.id;
-  console.log("Vendor ", vendor);
+  console.log("Vendor ", vendor, token);
 
   const [activeTab, setActiveTab] = useState("overview");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -90,12 +90,12 @@ const VendorDashboard = () => {
 
         // Fetch vendor profile separately if needed
         try {
-          const vendorProfile = await getVendorById(vendorId);
-          console.log("Vendor Profile", vendorProfile)
-          setProfile(vendorProfile);
+          const profile = await getVendorById(vendorId);
+          console.log("Vendor Profile", profile);
+          setProfile(profile);
         } catch (error) {
           console.error("Failed to load vendor profile:", error);
-          setProfile(vendor || {});
+          //   setProfile(vendor || {});
         }
       } catch (err) {
         console.error("Failed to load Vendor Dashboard:", err);
@@ -112,7 +112,7 @@ const VendorDashboard = () => {
       setLoading(false);
       setError("Authentication required");
     }
-  }, [token, vendor, orderChanged, productSaved]);
+  }, [token, vendor, vendorId, orderChanged, productSaved]);
 
   const growth =
     sales.lastMonth === 0
@@ -122,6 +122,17 @@ const VendorDashboard = () => {
       : ((sales.thisMonth - sales.lastMonth) / sales.lastMonth) * 100;
 
   const isPositive = growth >= 0;
+
+const handleDeleteClick = async (productId) => {
+  try {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    await deleteProduct(productId, token);
+    toast.success("Product deleted successfully.");
+    setProducts((prevProducts) => prevProducts.filter(p => p._id !== productId));
+  } catch (error) {
+    toast.error(error.response?.data?.error || "Failed to delete product.");
+  }
+};
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -313,9 +324,6 @@ const VendorDashboard = () => {
                           <p className="font-medium text-gray-900 text-sm">
                             {product.name}
                           </p>
-                          <p className="text-xs text-gray-600">
-                            Rs. {product.price}
-                          </p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -484,14 +492,30 @@ const VendorDashboard = () => {
                       </span>
                     </div>
                     <div className="flex space-x-2 mt-auto">
-                      <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded-md text-xs font-medium flex items-center justify-center space-x-1 whitespace-nowrap">
+                      {/* <button
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded-md text-xs font-medium flex items-center justify-center space-x-1 whitespace-nowrap"
+                        onClick={() => setIsAddModalOpen(true)}
+                      >
                         <FaEye className="w-3 h-3" />
                         <span>View</span>
-                      </button>
-                      <button className="flex-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded-md text-xs font-medium flex items-center justify-center space-x-1 whitespace-nowrap">
+                      </button> */}
+                      <button
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded-md text-xs font-medium flex items-center justify-center space-x-1 whitespace-nowrap"
+                        onClick={() => {
+                          setProductToEdit(product);
+                          setIsEditModalOpen(true);
+                        }}
+                      >
                         <FaEdit className="w-3 h-3" />
                         <span>Edit</span>
                       </button>
+                        {console.log("Deleting the product", product._id)}
+                      {/* Delete Icon only, no button box */}
+                      <FaTrash
+                        onClick={() => handleDeleteClick(product._id)}
+                        className="w-5 h-5 text-red-600 cursor-pointer hover:text-red-800"
+                        title="Delete product"
+                      />
                     </div>
                   </div>
                 </div>
@@ -499,6 +523,25 @@ const VendorDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Add Product Modal */}
+        <AddProductModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          initialProductData={null} // For adding a new product
+          onProductSaved={() => setProductSaved((prev) => !prev)}
+        />
+
+        {/* Edit Product Modal */}
+        <AddProductModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setProductToEdit(null); // Clear product to edit on close
+          }}
+          initialProductData={productToEdit} // Pass the product data for editing
+          onProductSaved={() => setProductSaved((prev) => !prev)}
+        />
 
         {/* orders tab */}
         {activeTab === "orders" && (
@@ -688,6 +731,8 @@ const VendorDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Profile Tab */}
         {activeTab === "profile" && profile && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* LEFT: Store Overview */}
@@ -830,25 +875,6 @@ const VendorDashboard = () => {
           </div>
         )}
       </div>
-
-      {/* Add Product Modal */}
-      <AddProductModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onProductSaved={() => setProductSaved((prev) => !prev)}
-        initialProductData={null} // For adding a new product
-      />
-
-      {/* Edit Product Modal */}
-      <AddProductModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setProductToEdit(null); // Clear product to edit on close
-        }}
-        onProductSaved={() => setProductSaved((prev) => !prev)}
-        initialProductData={productToEdit} // Pass the product data for editing
-      />
     </div>
   );
 };
