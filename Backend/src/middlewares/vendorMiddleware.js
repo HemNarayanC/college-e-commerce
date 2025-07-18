@@ -5,15 +5,15 @@ const authenticateVendor = async (req, res, next) => {
   try {
     let token = null;
 
-    // Check Authorization header for Bearer token
+    // First check Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
     }
-    // Fallback: Token from cookie named 'vendorToken'
-    else if (req.headers.cookie?.includes("vendorToken=")) {
+    // Fallback: check cookie
+    else if (req.headers.cookie?.includes("userToken=")) {
       token = req.headers.cookie
-        .split("vendorToken=")[1]
+        .split("userToken=")[1]
         .split(";")[0]
         .trim();
     }
@@ -21,15 +21,29 @@ const authenticateVendor = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({ error: "Unauthorized: No token provided" });
     }
+
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id); // Use 'id', not 'userId'
 
-    if (!user || user.role !== "vendor") {
+    const user = await User.findById(decoded.id);
+
+    if (
+      !user ||
+      !user.role ||
+      !Array.isArray(user.role) ||
+      !user.role.includes("vendor")git 
+    ) {
       return res.status(403).json({ error: "Access denied. Vendors only." });
     }
 
-    req.user = { id: user._id, role: user.role, email: user.email, vendorId: decoded.vendorId };
+    // Attach vendor user data
+    req.user = {
+      id: user._id,
+      role: user.role,
+      email: user.email,
+      vendorId: decoded.vendorId || null, // optional if embedded in token
+    };
+
     next();
   } catch (err) {
     return res.status(403).json({ error: `Forbidden: ${err.message}` });
