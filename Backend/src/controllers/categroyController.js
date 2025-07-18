@@ -15,4 +15,13 @@ const addCategory = async (req, res) => {
   }
 };
 
-export {addCategory}
+const getCategories = async (req, res) => {
+  try {
+    const categories = await categoryService.getAllCategories();
+    res.status(200).json(categories);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch categories" });
+  }
+};
+
+export {addCategory, getCategories}
