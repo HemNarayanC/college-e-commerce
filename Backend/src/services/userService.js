@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import User from "../models/User.js";
 
 const getAllUsers = async () => {
@@ -17,17 +18,26 @@ const getUserProfile = async (userId) => {
   return user;
 };
 
-const updateUserProfile = async (userId, updates) => {
-  const allowed = ["name", "phone", "profileImage"];
-  const data = {};
-  for (let key of allowed) if (updates[key] != null) data[key] = updates[key];
-  const user = await User.findByIdAndUpdate(userId, data, {
-    new: true,
-    runValidators: true,
-  }).select("-passwordHash");
-  if (!user) throw new Error("User not found");
-  return user;
-};
+  const updateUserProfile = async (userId, updates) => {
+    const disallowedFields = ["_id", "passwordHash", "createdAt"];
+    const data = {};
+
+    // Only include allowed fields
+    for (let key in updates) {
+      if (!disallowedFields.includes(key)) {
+        data[key] = updates[key];
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(userId, data, {
+      new: true,
+      runValidators: true,
+    }).select("-passwordHash");
+
+    if (!user) throw new Error("User not found");
+
+    return user;
+  };
 
 const changePassword = async (userId, oldPassword, newPassword) => {
   const user = await User.findById(userId);
@@ -45,6 +55,12 @@ const deleteUser = async (userId) => {
   const deleted = await User.findByIdAndDelete(userId);
   if (!deleted) throw new Error("User not found");
   return true;
+};
+
+const getUserById = async (userId) => {
+  const user = await User.findById(userId).select("-passwordHash");
+  if (!user) throw new Error("User not found"); 
+  return user;
 };
 
 // const getCart = async (userId) => {
@@ -129,6 +145,24 @@ const removeFromWishlist = async (userId, productId) => {
   return wishlist;
 };
 
+const toggleCustomerStatus = async (customerId, isActive) => {
+  if (!mongoose.Types.ObjectId.isValid(customerId)) {
+    throw new Error("Invalid customer ID");
+  }
+
+  const customer = await User.findByIdAndUpdate(
+    customerId,
+    { isActive },
+    { new: true, runValidators: true }
+  );
+
+  if (!customer) {
+    throw new Error("Customer not found");
+  }
+
+  return customer;
+};
+
 export default {
   getAllUsers,
   getUserProfile,
@@ -138,4 +172,6 @@ export default {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
-};
+  getUserById,
+  toggleCustomerStatus
+}
