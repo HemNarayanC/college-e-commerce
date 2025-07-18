@@ -15,13 +15,15 @@ import {
   FaArrowDown,
   FaSpinner,
   FaStar,
+  FaToggleOn,
+  FaToggleOff,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import AddProductModal from "../modals/AddProductModal";
 import OrderDetailsModal from "../modals/OrderDetailsModal";
 import { getVendorDashboardData } from "../../api/vendorDashboardApi";
-import { deleteProduct, getProductsByVendor } from "../../api/productApi";
+import { deleteProduct, getProductsByVendor, toggleProductStatus } from "../../api/productApi";
 import { getVendorById } from "../../api/vendorApi";
 import { getVendorOrders } from "../../api/ordersApi";
 
@@ -48,6 +50,7 @@ const VendorDashboard = () => {
   const [productSaved, setProductSaved] = useState(false);
   const [payout, setPayout] = useState(0);
   const [orderVolume, setOrderVolume] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [orderDetailsModalOpen, setOrderDetailsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -123,14 +126,42 @@ const VendorDashboard = () => {
 
   const isPositive = growth >= 0;
 
-const handleDeleteClick = async (productId) => {
+  const handleDeleteClick = async (productId) => {
+    try {
+      if (!window.confirm("Are you sure you want to delete this product?"))
+        return;
+      await deleteProduct(productId, token);
+      toast.success("Product deleted successfully.");
+      setProducts((prevProducts) =>
+        prevProducts.filter((p) => p._id !== productId)
+      );
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to delete product.");
+    }
+  };
+
+ const handleToggleProductStatus = async (productId, currentStatus) => {
+  setIsLoading(true);
   try {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-    await deleteProduct(productId, token);
-    toast.success("Product deleted successfully.");
-    setProducts((prevProducts) => prevProducts.filter(p => p._id !== productId));
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+    const data = await toggleProductStatus(productId, newStatus, token);
+
+    toast.success(data.message || "Product status updated successfully");
+
+    // Update products state immediately:
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product._id === productId ? { ...product, status: newStatus } : product
+      )
+    );
+
   } catch (error) {
-    toast.error(error.response?.data?.error || "Failed to delete product.");
+    toast.error(
+      error.response?.data?.error || "Failed to update product status"
+    );
+  } finally {
+    setIsLoading(false);
   }
 };
 
@@ -492,13 +523,6 @@ const handleDeleteClick = async (productId) => {
                       </span>
                     </div>
                     <div className="flex space-x-2 mt-auto">
-                      {/* <button
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded-md text-xs font-medium flex items-center justify-center space-x-1 whitespace-nowrap"
-                        onClick={() => setIsAddModalOpen(true)}
-                      >
-                        <FaEye className="w-3 h-3" />
-                        <span>View</span>
-                      </button> */}
                       <button
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded-md text-xs font-medium flex items-center justify-center space-x-1 whitespace-nowrap"
                         onClick={() => {
@@ -509,8 +533,28 @@ const handleDeleteClick = async (productId) => {
                         <FaEdit className="w-3 h-3" />
                         <span>Edit</span>
                       </button>
-                        {console.log("Deleting the product", product._id)}
-                      {/* Delete Icon only, no button box */}
+
+                      {/* Toggle status icon */}
+                      <button
+                        onClick={() =>
+                          handleToggleProductStatus(product._id, product.status)
+                        }
+                        title={
+                          product.status === "active"
+                            ? "Deactivate product"
+                            : "Activate product"
+                        }
+                        disabled={isLoading}
+                        className="flex items-center justify-center px-2"
+                      >
+                        {product.status === "active" ? (
+                          <FaToggleOn className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+                        ) : (
+                          <FaToggleOff className="w-6 h-6 text-gray-400 hover:text-gray-600 cursor-pointer" />
+                        )}
+                      </button>
+
+                      {/* Delete Icon only */}
                       <FaTrash
                         onClick={() => handleDeleteClick(product._id)}
                         className="w-5 h-5 text-red-600 cursor-pointer hover:text-red-800"
