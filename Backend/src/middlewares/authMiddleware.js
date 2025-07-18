@@ -1,35 +1,32 @@
-// middlewares/authMiddleware.js
-
 import jwt from "jsonwebtoken";
-import User from "../models/User";
 
-// Replace this with your secret (store in env in production)
-const JWT_SECRET = process.env.JWT_SECRET;
-
-const authenticate = async (req, res, next) => {
+const auth = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    let token = null;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    // Check Authorization header for Bearer token
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } 
+    // Fallback: Token from cookie (optional)
+    else if (req.headers.cookie?.includes("userToken=")) {
+      token = req.headers.cookie.split("userToken=")[1].split(";")[0]; // in case of multiple cookies
     }
 
-    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized: No token provided" });
+    }
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Attach decoded payload (e.g., id, role) to req.user
+    console.log("Authenticated user:", req.user); 
 
-    // Attach user to request (optional: fetch from DB)
-    const user = await User.findById(decoded.userId).select("-passwordHash");
-    if (!user) {
-      return res.status(401).json({ message: "Unauthorized: Invalid token" });
-    }
-
-    req.user = user; // You can access user info in routes using req.user
-    next();
+    next(); // Proceed to next middleware/route
   } catch (err) {
-    res.status(401).json({ message: "Unauthorized: Token invalid or expired" });
+    return res.status(403).json({ error: `Forbidden: ${err.message}` });
   }
 };
 
-export default authenticate;
+export default auth;
