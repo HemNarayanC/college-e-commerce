@@ -32,7 +32,7 @@ import OrderDetailsModal from "../modals/OrderDetailsModal";
 import { toast } from "react-toastify";
 import CustomerDetailsModal from "../modals/CustomerDetailsModal";
 import VendorDetailsModal from "../modals/VendorDetailsModal";
-import { updateVendorStatus } from "../../api/authApi";
+import { toggleCustomerStatus, updateVendorStatus } from "../../api/authApi";
 
 const AdminDashboard = () => {
   const token = useSelector((state) => state.auth.auth_token);
@@ -118,25 +118,45 @@ const AdminDashboard = () => {
     }));
   };
 
-const handleUpdateVendorStatus = async (vendorId, status) => {
-  setIsLoading(true);
-  try {
-    const { message } = await updateVendorStatus(vendorId, status, token);
-    toast.success(message || `Vendor ${status} successfully!`);
+  const handleUpdateVendorStatus = async (vendorId, status) => {
+    setIsLoading(true);
+    try {
+      const { message } = await updateVendorStatus(vendorId, status, token);
+      toast.success(message || `Vendor ${status} successfully!`);
 
-    setVendors((prev) =>
-      prev.map((vendor) =>
-        vendor._id === vendorId ? { ...vendor, status } : vendor
+      setVendors((prev) =>
+        prev.map((vendor) =>
+          vendor._id === vendorId ? { ...vendor, status } : vendor
+        )
+      );
+
+      if (selectedVendor?._id === vendorId) {
+        setSelectedVendor((prev) => ({ ...prev, status }));
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || `Failed to ${status} vendor.`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleCustomerStatus = async (customerId, currentStatus) => {
+  const newStatus = !currentStatus; // toggle boolean
+
+  try {
+    await toggleCustomerStatus(customerId, newStatus, token);
+    toast.success(`Customer status updated to ${newStatus ? "Active" : "Inactive"}`);
+
+    // Immediately update local customers state to reflect change in UI
+    setCustomers((prevCustomers) =>
+      prevCustomers.map((cust) =>
+        cust._id === customerId ? { ...cust, isActive: newStatus } : cust
       )
     );
-
-    if (selectedVendor?._id === vendorId) {
-      setSelectedVendor((prev) => ({ ...prev, status }));
-    }
   } catch (error) {
-    toast.error(error.response?.data?.message || `Failed to ${status} vendor.`);
-  } finally {
-    setIsLoading(false);
+    toast.error(error.response?.data?.message || "Failed to update customer status.");
   }
 };
 
@@ -466,18 +486,34 @@ const handleUpdateVendorStatus = async (vendorId, status) => {
                           Rs. {customer.totalSpent}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {customer.isActive ? (
-                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
-                              <FaCheckCircle className="mr-1 w-4 h-4" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
-                              <FaTimesCircle className="mr-1 w-4 h-4" />
-                              Inactive
-                            </span>
-                          )}
+                          <button
+                            onClick={() =>
+                              handleToggleCustomerStatus(
+                                customer._id,
+                                customer.isActive
+                              )
+                            }
+                            className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                              customer.isActive
+                                ? "text-green-800 bg-green-100"
+                                : "text-red-800 bg-red-100"
+                            }`}
+                            title="Toggle Customer Status"
+                          >
+                            {customer.isActive ? (
+                              <>
+                                <FaCheckCircle className="mr-1 w-4 h-4" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <FaTimesCircle className="mr-1 w-4 h-4" />
+                                Inactive
+                              </>
+                            )}
+                          </button>
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <button
                             className="text-green-600 hover:text-green-900"
@@ -613,11 +649,58 @@ const handleUpdateVendorStatus = async (vendorId, status) => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                          {vendor.status === "pending" && (
-                            <>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                            {vendor.status === "pending" && (
+                              <>
+                                <button
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Approve"
+                                  onClick={() =>
+                                    handleUpdateVendorStatus(
+                                      vendor._id,
+                                      "approved"
+                                    )
+                                  }
+                                  disabled={isLoading}
+                                >
+                                  <FaCheck className="w-5 h-5" />
+                                </button>
+                                <button
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Reject"
+                                  onClick={() =>
+                                    handleUpdateVendorStatus(
+                                      vendor._id,
+                                      "rejected"
+                                    )
+                                  }
+                                  disabled={isLoading}
+                                >
+                                  <FaTimes className="w-5 h-5" />
+                                </button>
+                              </>
+                            )}
+
+                            {vendor.status === "approved" && (
+                              <button
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Suspend Vendor"
+                                onClick={() =>
+                                  handleUpdateVendorStatus(
+                                    vendor._id,
+                                    "suspended"
+                                  )
+                                }
+                                disabled={isLoading}
+                              >
+                                <FaExclamationTriangle className="w-5 h-5" />
+                              </button>
+                            )}
+
+                            {vendor.status === "suspended" && (
                               <button
                                 className="text-green-600 hover:text-green-900"
-                                title="Approve"
+                                title="Reactivate Vendor"
                                 onClick={() =>
                                   handleUpdateVendorStatus(
                                     vendor._id,
@@ -628,37 +711,26 @@ const handleUpdateVendorStatus = async (vendorId, status) => {
                               >
                                 <FaCheck className="w-5 h-5" />
                               </button>
-                              <button
-                                className="text-red-600 hover:text-red-900"
-                                title="Reject"
-                                onClick={() =>
-                                  handleUpdateVendorStatus(
-                                    vendor._id,
-                                    "rejected"
-                                  )
-                                }
-                                disabled={isLoading}
-                              >
-                                <FaTimes className="w-5 h-5" />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            className="text-blue-600 hover:text-blue-900"
-                            title="View"
-                            onClick={() => {
-                              setVendorDetailsModalOpen(true);
-                              setSelectedVendor(vendor);
-                            }}
-                          >
-                            <FaEye className="w-5 h-5" />
-                          </button>
-                          <button
-                            className="text-purple-600 hover:text-purple-900"
-                            title="Edit"
-                          >
-                            <FaEdit className="w-5 h-5" />
-                          </button>
+                            )}
+
+                            <button
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View"
+                              onClick={() => {
+                                setVendorDetailsModalOpen(true);
+                                setSelectedVendor(vendor);
+                              }}
+                            >
+                              <FaEye className="w-5 h-5" />
+                            </button>
+
+                            {/* <button
+                              className="text-purple-600 hover:text-purple-900"
+                              title="Edit"
+                            >
+                              <FaEdit className="w-5 h-5" />
+                            </button> */}
+                          </td>
                         </td>
                       </tr>
                     ))}
