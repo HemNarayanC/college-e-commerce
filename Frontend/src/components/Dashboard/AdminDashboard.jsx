@@ -30,14 +30,24 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import OrderDetailsModal from "../modals/OrderDetailsModal";
 import { toast } from "react-toastify";
+import CustomerDetailsModal from "../modals/CustomerDetailsModal";
+import VendorDetailsModal from "../modals/VendorDetailsModal";
+import { updateVendorStatus } from "../../api/authApi";
 
 const AdminDashboard = () => {
   const token = useSelector((state) => state.auth.auth_token);
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
   const [orderDetailsModalOpen, setOrderDetailsModalOpen] = useState(false);
+  const [customerDetailsModalOpen, setCustomerDetailsModalOpen] =
+    useState(false);
+  const [vendorDetailsModalOpen, setVendorDetailsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-    const [orderChanged, setOrderChanged] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [customerDetailsChanged, setCustomerDetailsChanged] = useState(false);
+  const [vendorDetailsChanged, setVendorDetailsChanged] = useState(false);
   const [stats, setStats] = useState({});
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -45,11 +55,12 @@ const AdminDashboard = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   function formatPercentageChange(change) {
     if (change === undefined || change === null) return null;
     const sign = change > 0 ? "+" : "";
-    return `${sign}${change.toFixed(1)}%`;
+    return `${sign}${change}%`;
   }
 
   const openOrderDetails = (order) => {
@@ -106,6 +117,29 @@ const AdminDashboard = () => {
       [reviewId]: !prev[reviewId],
     }));
   };
+
+const handleUpdateVendorStatus = async (vendorId, status) => {
+  setIsLoading(true);
+  try {
+    const { message } = await updateVendorStatus(vendorId, status, token);
+    toast.success(message || `Vendor ${status} successfully!`);
+
+    setVendors((prev) =>
+      prev.map((vendor) =>
+        vendor._id === vendorId ? { ...vendor, status } : vendor
+      )
+    );
+
+    if (selectedVendor?._id === vendorId) {
+      setSelectedVendor((prev) => ({ ...prev, status }));
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || `Failed to ${status} vendor.`);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -195,7 +229,7 @@ const AdminDashboard = () => {
               <StatCard
                 icon={FaDollarSign}
                 title="Total Revenue"
-                value={(stats?.lifetimeSales ?? 0).toLocaleString()}
+                value={(stats?.lifetimeSales ?? 0)?.toLocaleString()}
                 change={formatPercentageChange(stats?.revenuePercentageChange)}
                 color="bg-gradient-to-r from-green-500 to-green-600"
               />
@@ -445,11 +479,14 @@ const AdminDashboard = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900">
+                          <button
+                            className="text-green-600 hover:text-green-900"
+                            onClick={() => {
+                              setCustomerDetailsModalOpen(true);
+                              setSelectedCustomer(customer);
+                            }}
+                          >
                             <FaEye className="w-4 h-4" />
-                          </button>
-                          <button className="text-green-600 hover:text-green-900">
-                            <FaEdit className="w-4 h-4" />
                           </button>
                           <button className="text-red-600 hover:text-red-900">
                             <FaTrash className="w-4 h-4" />
@@ -463,6 +500,15 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        <CustomerDetailsModal
+          isOpen={customerDetailsModalOpen}
+          onClose={() => setCustomerDetailsModalOpen(false)}
+          customer={selectedCustomer}
+          onCustomerUpdated={() =>
+            setCustomerDetailsChanged(!customerDetailsChanged)
+          }
+        />
 
         {/* Vendors Tab */}
         {activeTab === "vendors" && (
@@ -572,12 +618,26 @@ const AdminDashboard = () => {
                               <button
                                 className="text-green-600 hover:text-green-900"
                                 title="Approve"
+                                onClick={() =>
+                                  handleUpdateVendorStatus(
+                                    vendor._id,
+                                    "approved"
+                                  )
+                                }
+                                disabled={isLoading}
                               >
                                 <FaCheck className="w-5 h-5" />
                               </button>
                               <button
                                 className="text-red-600 hover:text-red-900"
                                 title="Reject"
+                                onClick={() =>
+                                  handleUpdateVendorStatus(
+                                    vendor._id,
+                                    "rejected"
+                                  )
+                                }
+                                disabled={isLoading}
                               >
                                 <FaTimes className="w-5 h-5" />
                               </button>
@@ -586,6 +646,10 @@ const AdminDashboard = () => {
                           <button
                             className="text-blue-600 hover:text-blue-900"
                             title="View"
+                            onClick={() => {
+                              setVendorDetailsModalOpen(true);
+                              setSelectedVendor(vendor);
+                            }}
                           >
                             <FaEye className="w-5 h-5" />
                           </button>
@@ -604,6 +668,13 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        <VendorDetailsModal
+          isOpen={vendorDetailsModalOpen}
+          onClose={() => setVendorDetailsModalOpen(false)}
+          vendorDetails={selectedVendor}
+          onVendorUpdated={() => setVendorDetailsChanged(!vendorDetailsChanged)}
+        />
 
         {activeTab === "orders" && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
