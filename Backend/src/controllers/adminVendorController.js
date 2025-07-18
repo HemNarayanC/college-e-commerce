@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Vendor from "../models/Vendor.js";
+import orderService from "../services/orderService.js";
 
 const approveVendor = async (req, res) => {
   try {
@@ -32,4 +33,25 @@ const approveVendor = async (req, res) => {
   }
 };
 
-export { approveVendor };
+const confirmDelivery = async (req, res) => {
+  try {
+    const { orderId, productId, vendorId } = req.body;
+
+    const updatedOrder = await orderService.confirmDeliveryAndReleasePayout(
+      orderId,
+      productId,
+      vendorId
+    );
+
+    console.log("updated order", updatedOrder)
+
+    res.status(200).json({
+      message: "Delivery confirmed and payout released.",
+      order: updatedOrder,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export { approveVendor, confirmDelivery };
