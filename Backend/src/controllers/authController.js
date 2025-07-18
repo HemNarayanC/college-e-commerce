@@ -2,7 +2,7 @@ import authService from "../services/authService.js";
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role, profileImage } = req.body;
+    const { name, email, password, phone, role } = req.body;
 
     // Validate required fields
     if (!name || !email || !password || !phone) {
@@ -44,6 +44,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("Login attempt with email:", req.body);
 
     if (!email || !password) {
       return res.status(400).json({
@@ -69,4 +70,21 @@ const login = async (req, res) => {
   }
 };
 
-export {register, login};
+const logout = async (req, res) => {
+  try {
+    // Clear the cookie by setting an expired date
+    res.clearCookie("userToken", {
+      httpOnly: true,
+      secure: false, // set to true if using https
+      sameSite: "Strict",
+    });
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      message: error.message || "Logout failed",
+    });
+  }
+};
+
+export {register, login, logout};
