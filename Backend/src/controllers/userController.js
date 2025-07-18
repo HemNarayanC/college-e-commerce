@@ -27,7 +27,10 @@ const updateProfile = async (req, res) => {
     const userId = req.user.userId;
     const profileUpdates = req.body;
 
-    const updatedUser = await userService.updateUserProfile(userId, profileUpdates);
+    const updatedUser = await userService.updateUserProfile(
+      userId,
+      profileUpdates
+    );
     res.status(200).json({ message: "Profile updated", user: updatedUser });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -61,20 +64,29 @@ const addToCart = async (req, res) => {
     const userId = req.user.userId;
     const { productId, variantId = null, quantity } = req.body;
 
-    const item = await cartService.addToCart(userId, productId, variantId, quantity);
+    const item = await cartService.addToCart(
+      userId,
+      productId,
+      variantId,
+      quantity
+    );
     res.json({ message: "Added to cart", item });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
-
 const updateCart = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { productId, variantId, quantity } = req.body;
 
-    const item = await cartService.updateCartItem(userId, productId, variantId, quantity);
+    const item = await cartService.updateCartItem(
+      userId,
+      productId,
+      variantId,
+      quantity
+    );
     res.json({ message: "Cart updated", item });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -106,7 +118,7 @@ const clearCart = async (req, res) => {
 
 const getWishlist = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const wishlist = await wishlistService.getWishlist(userId);
     res.json(wishlist);
   } catch (err) {
@@ -116,11 +128,17 @@ const getWishlist = async (req, res) => {
 
 const addToWishlist = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { productId } = req.body;
 
-    const updatedWishlist = await wishlistService.addToWishlist(userId, productId);
-    res.json({ message: "Product added to wishlist", wishlist: updatedWishlist });
+    const updatedWishlist = await wishlistService.addToWishlist(
+      userId,
+      productId
+    );
+    res.json({
+      message: "Product added to wishlist",
+      wishlist: updatedWishlist,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -128,11 +146,17 @@ const addToWishlist = async (req, res) => {
 
 const removeFromWishlist = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const productId = req.params.productId;
 
-    const updatedWishlist = await wishlistService.removeFromWishlist(userId, productId);
-    res.json({ message: "Product removed from wishlist", wishlist: updatedWishlist });
+    const updatedWishlist = await wishlistService.removeFromWishlist(
+      userId,
+      productId
+    );
+    res.json({
+      message: "Product removed from wishlist",
+      wishlist: updatedWishlist,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -140,7 +164,7 @@ const removeFromWishlist = async (req, res) => {
 
 const getUserOrderHistory = async (req, res) => {
   try {
-    const userId = req.user.userId; // assuming `userId` is stored in req.user
+    const userId = req.user.userId;
 
     const orders = await orderService.getUserOrders(userId);
     res.status(200).json(orders);
@@ -149,6 +173,41 @@ const getUserOrderHistory = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+const toggleCustomerStatus = async (req, res) => {
+  try {
+    const customerId = req.params.customerId;
+    const { isActive } = req.body;
+
+    // Validate isActive as boolean
+    if (typeof isActive !== "boolean") {
+      throw new Error("Invalid status value, must be boolean");
+    }
+
+    const updatedCustomer = await userService.toggleCustomerStatus(
+      customerId,
+      isActive
+    );
+
+    res.status(200).json({ message: "Customer status updated", customer: updatedCustomer });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 export {
   getAllUsers,
@@ -163,5 +222,7 @@ export {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
-  getUserOrderHistory
+  getUserOrderHistory,
+  getUserById,
+  toggleCustomerStatus
 };
