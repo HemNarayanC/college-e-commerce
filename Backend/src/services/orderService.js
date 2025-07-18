@@ -178,8 +178,6 @@ const fetchVendorOrders = async (vendorId) => {
           totalSold: productSalesMap[productId] || 0,
         };
       });
-
-    // ✅ Calculate subtotal only for this vendor's items
     const vendorTotal = vendorItems.reduce((acc, item) => {
       const price = item.productId?.price || 0;
       return acc + price * item.quantity;
@@ -192,7 +190,7 @@ const fetchVendorOrders = async (vendorId) => {
     return {
       orderId: order._id,
       orderDate: order.orderDate,
-      totalAmount: vendorTotal, // ✅ Only this vendor's product total
+      totalAmount: vendorTotal,
       status: order.status,
       paymentMethod: order.paymentMethod,
       shippingAddress: order.shippingAddress,
@@ -297,14 +295,14 @@ const confirmDeliveryAndReleasePayout = async (
 
   const item = order.items.find(
     (i) =>
-      i.productId.toString() === productId && i.vendorId.toString() === vendorId
+      i.productId.toString() === productId &&
+      i.vendorId.toString() === vendorId
   );
 
   if (!item) throw new Error("Order item not found for vendor and product");
   if (item.itemStatus === "delivered") {
     throw new Error("Item already marked as delivered");
   }
-
   item.itemStatus = "delivered";
 
   const allVendorItemsDelivered = order.items
@@ -316,39 +314,36 @@ const confirmDeliveryAndReleasePayout = async (
       (p) => p.vendorId.toString() === vendorId
     );
     if (!split) throw new Error("Payment split info not found for vendor");
-
     const existingPayout = await Payout.findOne({
       vendorId,
       referenceId: orderId,
     });
 
-    if (existingPayout) {
-      throw new Error("Payout already released for this order and vendor");
-    }
-
-    const payout = new Payout({
-      vendorId,
-      amount: split.amount,
-      payoutDate: new Date(),
-      status: "completed",
-      referenceId: orderId,
-    });
-
-    await payout.save();
-
-    await notificationService.dispatchNotificationByType(
-      "vendor_payout_released",
-      {
+    if (!existingPayout) {
+      const payout = new Payout({
         vendorId,
-        orderId,
         amount: split.amount,
-      }
-    );
+        payoutDate: new Date(),
+        status: "completed",
+        referenceId: orderId,
+      });
+
+      await payout.save();
+
+      // Notify vendor
+      await notificationService.dispatchNotificationByType(
+        "vendor_payout_released",
+        {
+          vendorId,
+          orderId,
+          amount: split.amount,
+        }
+      );
+    }
   }
 
   await order.save();
-
-  const allItemsDelivered = order.items.every(
+    const allItemsDelivered = order.items.every(
     (i) => i.itemStatus === "delivered"
   );
 
