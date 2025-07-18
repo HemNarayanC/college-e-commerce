@@ -11,8 +11,8 @@ const authenticateAdmin = async (req, res, next) => {
       token = authHeader.split(" ")[1];
     } 
     // Fallback: Token from cookie (optional)
-    else if (req.headers.cookie?.includes("token=")) {
-      token = req.headers.cookie.split("token=")[1].split(";")[0];
+    else if (req.headers.cookie?.includes("userToken=")) {
+      token = req.headers.cookie.split("userToken=")[1].split(";")[0];
     }
 
     if (!token) {
@@ -23,7 +23,7 @@ const authenticateAdmin = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !Array.isArray(user.role) || !user.role.includes("admin")) {
       return res.status(403).json({ error: "Access denied. Admins only." });
     }
 
