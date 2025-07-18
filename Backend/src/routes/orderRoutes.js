@@ -6,7 +6,7 @@ import { createOrder, getVendorOrders, updateOrderItemStatus } from "../controll
 const router = express.Router();
 
 router.post("/place-order", auth, createOrder);
-router.get("/vendor-orders-id", authenticateVendor, getVendorOrders);
-router.patch("/vendor/item-status", authenticateVendor, updateOrderItemStatus);
+router.get("/vendor/orders", authenticateVendor, getVendorOrders);
+router.patch("/vendor/item/status", authenticateVendor, updateOrderItemStatus);
 
 export default router;
