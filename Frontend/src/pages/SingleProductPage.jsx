@@ -18,7 +18,7 @@ const SingleProductPage = () => {
   const [vendor, setVendor] = useState(null)
   const [reviews, setReviews] = useState([])
   const [activeTab, setActiveTab] = useState("description")
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(null) // <-- null by default
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [addingToCart, setAddingToCart] = useState(false)
