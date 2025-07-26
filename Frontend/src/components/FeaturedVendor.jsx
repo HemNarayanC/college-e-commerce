@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getFeaturedVendors } from "../api/vendorApi";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
+import { VENDOR_FRONT_STORE_ROUTE } from "../constants/routes";
 
 const FeaturedVendor = () => {
   const [vendors, setVendors] = useState([]);
@@ -45,8 +46,8 @@ const FeaturedVendor = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8">
             {vendors.map((vendor) => (
-              <a
-                href={`/vendor/${vendor._id}`}
+              <Link
+                to={`${VENDOR_FRONT_STORE_ROUTE}/${vendor._id}`}
                 key={vendor._id}
                 className="group block bg-[#e9e4db] rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 p-6 text-center focus:outline-none focus:ring-2 focus:ring-[#7f6e58]"
               >
@@ -102,7 +103,7 @@ const FeaturedVendor = () => {
                 >
                   Visit Store
                 </button>
-              </a>
+              </Link>
             ))}
           </div>
         )}
