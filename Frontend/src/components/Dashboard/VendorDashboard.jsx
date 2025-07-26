@@ -217,7 +217,7 @@ const VendorDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <FaSpinner className="animate-spin text-4xl text-blue-600" />
+        <FaSpinner className="animate-spin text-4xl text-green-600" />
         <p className="ml-4 text-lg text-gray-700">Loading dashboard...</p>
       </div>
     );
