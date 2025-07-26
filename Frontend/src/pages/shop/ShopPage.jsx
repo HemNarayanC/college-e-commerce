@@ -6,12 +6,16 @@ import FilterSidebar from "../../components/shop/FilterSidebar";
 import ShopHeader from "../../components/shop/ShopHeader";
 import LoadingSpinner from "../../components/shop/LoaderSpinner";
 import EmptyState from "../../components/shop/EmptyState";
-import ProductCards from "../../components/Products/ProductCards";
 import ProductListView from "../../components/shop/ProductListView";
 import Pagination from "../../components/shop/Pagination";
 import CompareBarAndModal from "../../components/CompareBar";
+import { useSelector } from "react-redux";
+import ProductCards from "../../components/products/ProductCards";
 
 const ShopPage = () => {
+  const user = useSelector((state) => state.auth.user);
+  const isLoggedIn = !!user;
+  
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -177,13 +181,13 @@ const ShopPage = () => {
                 {viewMode === "grid" ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {products.map((product) => (
-                      <ProductCards key={product._id} product={product} />
+                      <ProductCards key={product._id} product={product} isLoggedIn={isLoggedIn} />
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {products.map((product) => (
-                      <ProductListView key={product._id} product={product} />
+                      <ProductListView key={product._id} product={product} isLoggedIn={isLoggedIn} />
                     ))}
                   </div>
                 )}
