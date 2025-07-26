@@ -2,6 +2,10 @@ import { useState } from "react";
 import { FaHeart, FaShoppingCart, FaStar, FaEye } from "react-icons/fa";
 import { MdBalance } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
+// import {
+//   addToWishlist,
+//   removeFromWishlist,
+// } from "../../redux/wishlist/wishListsSlice";
 import {
   addToCompare,
   removeFromCompare,
@@ -19,15 +23,14 @@ const ProductCards = ({ product }) => {
 
   const isLoggedIn = useSelector((state) => state.auth.isAuthenticated);
   const compareList = useSelector((state) => state.compare.compareList);
+  // const wishlistItems = useSelector((state) => state.wishlist.items);
 
   const isCompared = compareList.some((item) => item.id === product._id);
+  // const isWishlisted = wishlistItems.some((item) => item.id === product._id);
   const navigate = useNavigate();
 
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
-
-  // LOCAL wishlist state
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
   if (!product || !product.variants || product.variants.length === 0)
     return null;
@@ -82,6 +85,33 @@ const ProductCards = ({ product }) => {
     navigate(`${SHOP_ROUTE}/products/${product._id}`);
   };
 
+  // const toggleWishlist = () => {
+  //   if (!isLoggedIn) {
+  //     toast.warning("Please log in to use wishlist.", {
+  //       position: "top-right",
+  //       autoClose: 3000,
+  //       pauseOnHover: false,
+  //     });
+  //     return;
+  //   }
+
+  //   if (isWishlisted) {
+  //     dispatch(removeFromWishlist(product._id));
+  //     toast.info(`${product.name} removed from wishlist.`, {
+  //       position: "top-right",
+  //       autoClose: 2000,
+  //       pauseOnHover: false,
+  //     });
+  //   } else {
+  //     dispatch(addToWishlist({ ...product, id: product._id }));
+  //     toast.success(`${product.name} added to wishlist.`, {
+  //       position: "top-right",
+  //       autoClose: 2000,
+  //       pauseOnHover: false,
+  //     });
+  //   }
+  // };
+
   const handleCompare = () => {
     if (isCompared) {
       dispatch(removeFromCompare(product._id));
@@ -90,30 +120,23 @@ const ProductCards = ({ product }) => {
     }
   };
 
-  // Toggle local wishlist state
-  const toggleWishlist = () => {
-    setIsWishlisted((prev) => !prev);
-  };
-
   return (
     <div
       className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 bg-white border border-gray-200 rounded-lg w-full h-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Wishlist Button - local toggle */}
-      <button
-        onClick={toggleWishlist}
+      {/* Wishlist Button */}
+      {/* <button
+        // onClick={toggleWishlist}
         className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-white/90 backdrop-blur-sm transition-all duration-200 hover:scale-110 shadow-sm"
-        title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        type="button"
       >
         <FaHeart
           className={`w-4 h-4 ${
-            isWishlisted ? "text-red-500" : "text-gray-400"
+            isWishlisted ? "text-red-500" : "text-gray-600"
           }`}
         />
-      </button>
+      </button> */}
 
       {/* Stock Badge */}
       {isLowStock && (
@@ -143,7 +166,6 @@ const ProductCards = ({ product }) => {
             disabled={!isInStock}
             className="p-2.5 bg-white rounded-full shadow-lg hover:bg-blue-600 hover:text-white transition-all duration-200 disabled:opacity-50"
             title="Add to Cart"
-            type="button"
           >
             <FaShoppingCart className="w-4 h-4" />
           </button>
@@ -152,7 +174,6 @@ const ProductCards = ({ product }) => {
             onClick={handleQuickView}
             className="p-2.5 bg-white rounded-full shadow-lg hover:bg-blue-600 hover:text-white transition-all duration-200"
             title="Quick View"
-            type="button"
           >
             <FaEye className="w-4 h-4" />
           </button>
@@ -165,7 +186,6 @@ const ProductCards = ({ product }) => {
                 : "bg-white hover:bg-blue-600 hover:text-white"
             }`}
             title={isCompared ? "Remove from Compare" : "Add to Compare"}
-            type="button"
           >
             <MdBalance className="w-4 h-4" />
           </button>
@@ -233,7 +253,6 @@ const ProductCards = ({ product }) => {
                         : "hover:scale-105"
                     }`}
                     title={variant.color}
-                    type="button"
                   >
                     <div
                       className="w-full h-full rounded-full border border-gray-200"
