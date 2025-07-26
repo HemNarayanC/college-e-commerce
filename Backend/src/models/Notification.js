@@ -13,7 +13,14 @@ const NotificationSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ["order_placed", "order_delivered", "review", "ticket", "general"],
+    enum: [
+      "order_placed",
+      "order_delivered",
+      "review",
+      "ticket",
+      "general",
+      "vendor_payout_released",
+    ],
     default: "general",
   },
 
