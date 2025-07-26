@@ -7,31 +7,33 @@ import { getCart, clearCart } from "../../api/cartApi";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { setItemCount } from "../../redux/cart/cartSlice";
+import { useNavigate } from "react-router-dom";
 
 const CartSidebar = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.auth_token);
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-const fetchCart = async () => {
-  if (!token) return;
-  try {
-    setLoading(true);
-    const data = await getCart(token);
-    setCartItems(data || []);
-    const count = (data || []).reduce(
-      (sum, item) => sum + (item.quantity || 1),
-      0
-    );
-    dispatch(setItemCount(count));
-  } catch (error) {
-    console.error("Failed to fetch cart:", error);
-    toast.error("Could not load cart. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchCart = async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const data = await getCart(token);
+      setCartItems(data || []);
+      const count = (data || []).reduce(
+        (sum, item) => sum + (item.quantity || 1),
+        0
+      );
+      dispatch(setItemCount(count));
+    } catch (error) {
+      console.error("Failed to fetch cart:", error);
+      toast.error("Could not load cart. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClearCart = async () => {
     try {
@@ -44,7 +46,7 @@ const fetchCart = async () => {
     }
   };
 
-    useEffect(() => {
+  useEffect(() => {
     if (!token) {
       setCartItems([]);
       dispatch(setItemCount(0));
@@ -121,6 +123,11 @@ const fetchCart = async () => {
                 <CartSummary
                   total={total}
                   onClearCart={handleClearCart}
+                  navigate={(path) =>
+                    navigate(path, {
+                      state: { cartData: cartItems, from: "cart" },
+                    })
+                  }
                 />
               </div>
             )}
