@@ -44,7 +44,7 @@ const productImageStorage = new CloudinaryStorage({
   },
 });
 
-// 📄 Document file filter
+// Document file filter
 const documentFileFilter = (req, file, cb) => {
   const allowedTypes = /pdf|doc|docx/;
   const mimeType = allowedTypes.test(file.mimetype);
@@ -56,7 +56,7 @@ const documentFileFilter = (req, file, cb) => {
   cb(new Error('Only PDF, DOC, and DOCX files are allowed!'));
 };
 
-// 🖼️ Image file filter (used for both product & profile images)
+// Image file filter (used for both product & profile images)
 const imageFileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png/;
   const mimeType = allowedTypes.test(file.mimetype);
@@ -68,10 +68,10 @@ const imageFileFilter = (req, file, cb) => {
   cb(new Error('Only JPEG, JPG, and PNG images are allowed!'));
 };
 
-// 📦 Upload handlers
+// Upload handlers
 const uploadProductImage = multer({
   storage: productImageStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
   fileFilter: imageFileFilter,
 });
 
@@ -83,7 +83,7 @@ const uploadVendorDocument = multer({
 
 const uploadUserProfile = multer({
   storage: userProfileStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
   fileFilter: imageFileFilter,
 });
 
