@@ -1,9 +1,14 @@
-const LoadingSpinner = () => {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64973f]"></div>
-    </div>
-  )
-}
+import { FaSpinner } from "react-icons/fa";
 
-export default LoadingSpinner
+const LoadingSpinner = ({ message }) => {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <FaSpinner className="animate-spin text-4xl text-green-600" />
+      {message && (
+        <p className="ml-4 text-lg text-gray-700">{message}</p>
+      )}
+    </div>
+  );
+};
+
+export default LoadingSpinner;
