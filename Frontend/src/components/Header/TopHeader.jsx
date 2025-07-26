@@ -30,7 +30,7 @@ const TopHeader = () => {
         </span>
         <span className="hidden md:inline">|</span>
         <span className="hidden md:inline">
-          <i className="fas fa-envelope"></i> support@multivendor.com
+          <i className="fas fa-envelope"></i> support@nivasa.com
         </span>
       </div>
 
