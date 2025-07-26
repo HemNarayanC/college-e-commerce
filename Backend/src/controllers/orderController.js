@@ -1,20 +1,40 @@
+import { verifyKhaltiTransaction } from "../services/khaltiService.js";
 import orderService from "../services/orderService.js";
-
 const createOrder = async (req, res) => {
   try {
-    const userId = req.user.userId; // from auth middleware (ensure token contains `id`)
-    const orderData = req.body;
+    const userId = req.user?.userId;
+    const { paymentMethod, khaltiToken, totalAmount } = req.body;
 
-    const order = await orderService.createOrder(userId, orderData);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: User not found." });
+    }
 
-    res.status(201).json({
+    if (!paymentMethod) {
+      return res.status(400).json({ error: "Payment method is required." });
+    }
+
+    if (paymentMethod === "khalti") {
+      if (!khaltiToken || !totalAmount) {
+        return res.status(400).json({ error: "Khalti token and amount required" });
+      }
+
+      const verification = await verifyKhaltiTransaction(khaltiToken, totalAmount);
+      if (!verification.success) {
+        return res.status(400).json({ error: "Khalti verification failed" });
+      }
+    }
+
+    const order = await orderService.createOrder(userId, req.body);
+
+    return res.status(201).json({
       message: "Order placed successfully.",
       order,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Error placing order:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
-};
+}; 
 
 const getVendorOrders = async (req, res) => {
   try {
@@ -29,11 +49,11 @@ const getVendorOrders = async (req, res) => {
 
 const updateOrderItemStatus = async (req, res) => {
   try {
-    const vendorId = req.user.vendorId; // From auth middleware
+    const vendorId = req.user.vendorId; // Assuming auth middleware sets req.user
     const { orderId, productId, newStatus } = req.body;
 
-    const validStatuses = ["pending", "paid", "shipped", "delivered", "cancelled"];
-    if (!validStatuses.includes(newStatus)) {
+    const validStatuses = ["processing", "shipped", "delivered", "cancelled"];
+    if (!validStatuses.includes(newStatus.toLowerCase().trim())) {
       return res.status(400).json({ error: "Invalid status value" });
     }
 
@@ -49,7 +69,8 @@ const updateOrderItemStatus = async (req, res) => {
       order: updatedOrder,
     });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Error in updateOrderItemStatusHandler:", err);
+    res.status(500).json({ error: err.message });
   }
 };
 
