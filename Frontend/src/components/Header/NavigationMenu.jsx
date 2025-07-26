@@ -23,7 +23,7 @@ const NavigationMenu = () => {
   }, [location.pathname]);
 
   return (
-    <div className="w-full flex justify-center h-12 items-center relative z-50">
+    <div className="w-full flex justify-center h-12 items-center relative z-30">
       <header>
         <nav className="text-[#1e714f] relative">
           <div
@@ -37,7 +37,7 @@ const NavigationMenu = () => {
             />
 
             {/* Navigation Links */}
-            {navMenu.map((menu, i) => (
+            {navMenu.map((menu, i) => (      
               <NavLink
                 ref={(el) => (linkRefs.current[i] = el)}
                 key={menu.route}
