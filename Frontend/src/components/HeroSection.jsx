@@ -52,18 +52,18 @@ const HeroSection = () => {
 
       {/* Right Static Image */}
       <div
-        className="absolute top-0 right-0 h-full w-[60%] bg-[#a3b18a] transition-colors duration-500"
-        style={{
-          clipPath: "polygon(61% 0%, 97.25% 0%, 100% 0%, 100% 100%, 10% 100%)",
-        }}
+        className="absolute top-0 right-0 h-full w-[60%] transition-colors duration-500"
+        // style={{
+        //   clipPath: "polygon(61% 0%, 97.25% 0%, 100% 0%, 100% 100%, 10% 100%)",
+        // }}
       >
         <div className="relative w-full h-full overflow-hidden">
-          <img
+          {/* <img
             // Use a fixed image here (replace with your static image path)
-            src="/static-image.jpg"
+            src="https://img.freepik.com/premium-psd/living-room-with-sofa-lamp_41470-5770.jpg?uid=R148054295&ga=GA1.1.639331434.1748105128&semt=ais_hybrid&w=740"
             alt="Static Slide Illustration"
             className="absolute inset-0 w-full h-full object-cover"
-          />
+          /> */}
           <div className="absolute bottom-8 right-8 z-30">
             <span className="text-3xl font-bold text-white">
               {String(currentSlide + 1).padStart(2, "0")}{" "}
