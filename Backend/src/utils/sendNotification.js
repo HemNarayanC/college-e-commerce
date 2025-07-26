@@ -1,6 +1,5 @@
-// utils/sendNotification.js
-
 import Notification from "../models/Notification.js";
+import User from "../models/User.js";
 
 const notificationTemplates = {
   order_placed: {
@@ -10,50 +9,52 @@ const notificationTemplates = {
   },
   order_delivered: {
     title: () => "Order Delivered",
-    message: ({ orderId }) =>
-      `Order #${orderId} has been delivered successfully.`,
+    message: ({ orderId }) => `Order #${orderId} has been delivered successfully.`,
     link: ({ orderId }) => `/orders/${orderId}`,
   },
   support_reply: {
     title: () => "Support Reply",
-    message: ({ ticketId }) =>
-      `A reply has been added to your ticket #${ticketId}.`,
+    message: ({ ticketId }) => `A reply has been added to your ticket #${ticketId}.`,
     link: ({ ticketId }) => `/support/${ticketId}`,
   },
-
   vendor_payout_released: {
     title: () => "Payout Released",
-    message: ({ vendorId, amount }) =>
-      `Payout of $${amount} has been released to vendor #${vendorId}.`,
+    message: ({ vendorId, amount }) => `Payout of Rs. ${amount} has been released to vendor #${vendorId}.`,
     link: ({ vendorId }) => `/vendor/payouts/${vendorId}`,
   },
   // Add more types as needed
 };
 
 const sendNotification = async ({ userId, vendorId, type, data }) => {
-  console.log("Sending notification:", {
-    userId,
-    vendorId,
-    type,
-    data,
-  });
   const template = notificationTemplates[type];
-
   if (!template) throw new Error(`No notification template for type: ${type}`);
 
   const title = template.title();
   const message = template.message(data);
   const link = template.link(data);
 
-  const notification = new Notification({
-    userId,
-    vendorId,
+  const notificationData = {
     title,
     message,
-    type,
     link,
-  });
+    type,
+    isRead: false,
+  };
 
+  if (userId) {
+    const user = await User.findById(userId);
+    if (user && user.role === "customer") {
+      notificationData.userId = userId;
+    } else {
+      console.warn("User is not a customer or does not exist", userId);
+    }
+  }
+
+  if (vendorId) {
+    notificationData.vendorId = vendorId;
+  }
+
+  const notification = new Notification(notificationData);
   await notification.save();
 };
 
