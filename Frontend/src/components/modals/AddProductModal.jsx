@@ -21,7 +21,12 @@ import { getCategories } from "../../api/categoryApi";
 import { useSelector } from "react-redux";
 import { addProduct, updateProduct } from "../../api/productApi";
 
-const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => {
+const AddProductModal = ({
+  isOpen,
+  onClose,
+  initialProductData,
+  onProductSaved,
+}) => {
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -33,7 +38,7 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
     images: [],
     variants: [],
     status: "active",
-    commissionRate: 0.1,
+    // commissionRate: 0.1,
     isFeatured: false,
   });
 
@@ -46,7 +51,8 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
   useEffect(() => {
     if (isOpen) {
       if (initialProductData) {
-        console.log("Initial Data", initialProductData)
+        console.log("Initial Product is", initialProductData.images);
+        console.log("Initial Data", initialProductData);
         const initialImages =
           initialProductData.images?.map((url) => ({
             file: null,
@@ -54,19 +60,19 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
             path: url,
           })) || [];
 
-                const variantStockSum = initialProductData.variants?.reduce(
-        (sum, v) => sum + Number(v.stock || 0),
-        0
-      );
+        const variantStockSum = initialProductData.variants?.reduce(
+          (sum, v) => sum + Number(v.stock || 0),
+          0
+        );
 
-      const totalStock = Number(initialProductData.stock || 0);
-      const baseStock = Math.max(totalStock - variantStockSum, 0);
+        const totalStock = Number(initialProductData.stock || 0);
+        const baseStock = Math.max(totalStock - variantStockSum, 0);
 
         setFormData({
           ...initialProductData,
           price: Number(initialProductData.price || 0),
           stock: baseStock,
-          commissionRate: Number(initialProductData.commissionRate || 0),
+          // commissionRate: Number(initialProductData.commissionRate || 0),
           images: initialImages,
           variants:
             initialProductData.variants?.map((v) => ({
@@ -77,7 +83,7 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
           comfortTags: initialProductData.comfortTags || [],
           status: initialProductData.status || "active",
           isFeatured: initialProductData.isFeatured || false,
-          categoryId: initialProductData.categoryId._id || ""
+          categoryId: initialProductData.categoryId._id || "",
         });
       } else {
         setFormData({
@@ -91,7 +97,7 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
           images: [],
           variants: [],
           status: "active",
-          commissionRate: 0.1,
+          // commissionRate: 0.1,
           isFeatured: false,
         });
       }
@@ -228,12 +234,19 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
       form.append("price", formData.price);
       form.append("stock", formData.stock);
       form.append("status", formData.status);
-      form.append("commissionRate", formData.commissionRate);
       form.append("isFeatured", formData.isFeatured);
       form.append("comfortTags", JSON.stringify(formData.comfortTags));
       form.append("variants", JSON.stringify(formData.variants));
 
-      // Only new files are uploaded
+      // Separate existing image URLs (no file) and new files
+      const existingImageUrls = formData.images
+        .filter((img) => !img.file)
+        .map((img) => img.preview || img.path);
+
+      // Append existing images as JSON string
+      form.append("images", JSON.stringify(existingImageUrls));
+
+      // Append new image files
       formData.images.forEach((img) => {
         if (img.file) {
           form.append("images", img.file);
@@ -249,7 +262,7 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
         result = await addProduct(form, token);
       }
       toast.success(result.message);
-      if (onSuccess) onSuccess();
+      if (onProductSaved) onProductSaved();
       onClose();
     } catch (error) {
       console.error("Product save failed:", error);
@@ -385,7 +398,7 @@ const AddProductModal = ({ isOpen, onClose, initialProductData, onSuccess }) => 
                   required
                 />
               </div>
-            
+
               <div className="flex items-center mt-2">
                 <input
                   type="checkbox"
