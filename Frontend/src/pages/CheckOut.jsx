@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { getProductById } from "../api/productApi";
-import { initiateKhalti, placeOrder, verifyKhalti } from "../api/ordersApi";
+import { initiateKhalti, placeOrder } from "../api/ordersApi";
+import khalti_wallet_logo from "../assets/khalti_wallet_logo.png";
 import {
   FaArrowLeft,
   FaCreditCard,
@@ -21,6 +22,8 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { getUserProfile } from "../api/userApi";
+import { saveCODTransaction } from "../api/transactionApi";
+import { SHOP_ROUTE } from "../constants/routes";
 
 // Khalti Payment Button
 const KhaltiButton = ({ amount, onSuccess }) => {
@@ -89,8 +92,8 @@ const CheckoutPage = () => {
     {
       id: "khalti",
       name: "Khalti",
-      icon: FaCreditCard,
-      color: "bg-purple-600",
+      logo: khalti_wallet_logo,
+      color: "white",
     },
   ];
 
@@ -116,6 +119,7 @@ const CheckoutPage = () => {
               cartId: item._id,
             };
           });
+          console.log("Check out items", checkoutItems);
           setProducts(checkoutItems);
         }
         // Buy Now checkout
@@ -196,10 +200,10 @@ const CheckoutPage = () => {
         0
       );
 
-      let payload = {
+      const payload = {
         items,
-        paymentMethod: method,
         shippingAddress,
+        paymentMethod: method,
         totalAmount,
       };
 
@@ -222,18 +226,36 @@ const CheckoutPage = () => {
           token
         );
 
-        // ✅ Store info in localStorage for verification page
         localStorage.setItem("khaltiPidx", pidx);
-        localStorage.setItem("khaltiAmount", totalAmount); // convert to paisa
+        localStorage.setItem("khaltiAmount", totalAmount);
         localStorage.setItem("auth_token", token);
+        localStorage.setItem("khaltiShipping", JSON.stringify(shippingAddress));
+        localStorage.setItem("khaltiItems", JSON.stringify(items));
 
-        // ✅ Redirect user to Khalti payment page
         window.location.href = payment_url;
-        return; // stop here, verification will happen on return_url
+        return;
       }
 
-      // For other payment methods
-      await placeOrder(payload, token);
+      console.log("Order data payload", payload);
+
+      const codOrderResponse = await placeOrder(payload, token);
+      console.log("COD Order Response", codOrderResponse);
+
+      if (method === "cod" && codOrderResponse?.order) {
+        const order = codOrderResponse.order;
+        const codTransactionPayload = {
+          userId: order.userId,
+          orderId: order._id,
+          amount: order.totalAmount,
+          productIdentities: order.items.map((i) => i.productId),
+          productNames: products.map((p) => p.product.name),
+        };
+
+        // Save the COD transaction
+        await saveCODTransaction(codTransactionPayload, token);
+        console.log("COD transaction saved");
+      }
+
       setShowSuccess(true);
     } catch (err) {
       alert(err.message || "Order failed. Try again.");
@@ -282,12 +304,12 @@ const CheckoutPage = () => {
           <p className="text-slate-600 mb-6">
             Your checkout is empty. Please add items to continue.
           </p>
-          <button
-            onClick={() => navigate("/")}
+          <Link
+            to={SHOP_ROUTE}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
             Continue Shopping
-          </button>
+          </Link>
         </div>
       </div>
     );
@@ -327,18 +349,18 @@ const CheckoutPage = () => {
             </div>
           </div>
 
-          <button
+          <Link
             onClick={() => navigate("/orders")}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors mb-3"
           >
             Track Your Order
-          </button>
-          <button
+          </Link>
+          <Link
             onClick={() => navigate("/")}
             className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
           >
             Continue Shopping
-          </button>
+          </Link>
         </div>
       </div>
     );
@@ -516,32 +538,37 @@ const CheckoutPage = () => {
 
                 {/* Payment Method Selection */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {paymentMethods.map((method) => {
-                    const IconComponent = method.icon;
-                    return (
-                      <button
-                        key={method.id}
-                        type="button"
-                        onClick={() => setSelectedPaymentMethod(method.id)}
-                        className={`p-4 border-2 rounded-xl transition-all hover:border-blue-300 cursor-pointer ${
-                          selectedPaymentMethod === method.id
-                            ? "border-blue-500 bg-blue-50 shadow-md"
-                            : "border-gray-200 hover:shadow-sm"
-                        }`}
-                      >
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={`w-10 h-10 ${method.color} rounded-lg flex items-center justify-center mb-2`}
-                          >
-                            <IconComponent className="text-white text-lg" />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {method.name}
-                          </span>
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod(method.id)}
+                      className={`p-4 border-2 rounded-xl transition-all hover:border-blue-300 cursor-pointer ${
+                        selectedPaymentMethod === method.id
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 hover:shadow-sm"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={`w-20 h-12 ${method.color} rounded-lg flex items-center justify-center mb-2`}
+                        >
+                          {method.logo ? (
+                            <img
+                              src={method.logo}
+                              alt={method.name}
+                              className="w-20 h-20 object-contain"
+                            />
+                          ) : (
+                            <method.icon className="text-white text-lg" />
+                          )}
                         </div>
-                      </button>
-                    );
-                  })}
+                        <span className="text-sm font-medium text-gray-900">
+                          {method.name}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Payment Method Details */}
