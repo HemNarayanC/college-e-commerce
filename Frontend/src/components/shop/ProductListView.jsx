@@ -1,45 +1,85 @@
-import { useState } from "react"
-import { FaHeart, FaShoppingCart, FaStar, FaEye } from "react-icons/fa"
-import { MdBalance } from "react-icons/md"
-import { useDispatch, useSelector } from "react-redux"
-import { addToCompare, removeFromCompare } from "../../redux/product/compareProduct"
+import { useState } from "react";
+import { FaHeart, FaShoppingCart, FaStar, FaEye } from "react-icons/fa";
+import { MdBalance } from "react-icons/md";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+
+import { addToCompare, removeFromCompare } from "../../redux/product/compareProduct";
+import { addToCart } from "../../api/cartApi";
+import { SHOP_ROUTE } from "../../constants/routes";
+import { useNavigate } from "react-router-dom";
 
 const ProductListView = ({ product }) => {
-  const dispatch = useDispatch()
-  const compareList = useSelector((state) => state.compare.compareList)
-  const isCompared = compareList.some((item) => item.id === product._id)
+  const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.auth_token);
+  const isLoggedIn = Boolean(token);
+  const navigate = useNavigate();
+  const compareList = useSelector((state) => state.compare.compareList);
+  const isCompared = compareList.some((item) => item.id === product._id);
 
-  const [selectedVariant, setSelectedVariant] = useState(null)
-  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
-  if (!product || !product.variants || product.variants.length === 0) return null
+  if (!product || !product.variants || product.variants.length === 0) return null;
 
-  const currentVariant = product.variants[selectedVariant]
-  const currentPrice = currentVariant?.price || product.price
-  const currentStock = currentVariant?.stock || product.stock
-  const isInStock = currentStock > 0
-  const isLowStock = currentStock <= 5 && currentStock > 0
+  const currentVariant = selectedVariant !== null
+    ? product.variants[selectedVariant]
+    : product.variants[0];
+
+  const currentPrice = currentVariant?.price || product.price;
+  const currentStock = currentVariant?.stock || product.stock;
+  const isInStock = currentStock > 0;
+  const isLowStock = currentStock <= 5 && currentStock > 0;
+
 
   const handleCompare = () => {
     if (isCompared) {
-      dispatch(removeFromCompare(product._id))
+      dispatch(removeFromCompare(product._id));
     } else {
-      dispatch(addToCompare({ ...product, id: product._id }))
+      dispatch(addToCompare({ ...product, id: product._id }));
     }
-  }
+  };
 
-  const handleAddToCart = () => {
-    console.log("Added to cart:", {
-      productId: product._id,
-      variant: currentVariant,
-    })
-  }
+  const handleAddToCart = async () => {
+    if (!isLoggedIn) {
+      toast.warning("Please log in to add items to your cart.", {
+        position: "top-right",
+        autoClose: 3000,
+        pauseOnHover: false,
+      });
+      return;
+    }
+
+    try {
+      const variantIdToSend =
+        selectedVariant !== null ? product.variants[selectedVariant]._id : null;
+
+      await addToCart({
+        token,
+        productId: product._id,
+        variantId: variantIdToSend,
+        quantity: 1,
+      });
+
+      toast.success(`${product.name} (${currentVariant?.color || "default"}) added to cart!`, {
+        position: "top-right",
+        autoClose: 2000,
+        pauseOnHover: false,
+      });
+    } catch (err) {
+      toast.error("Failed to add to cart. Please try again.");
+      console.error(err);
+    }
+  };
 
   const handleQuickView = () => {
-    console.log("Quick view:", product._id)
-  }
+    navigate(`${SHOP_ROUTE}/products/${product._id}`);
+  };
 
-  const toggleWishlist = () => setIsWishlisted(!isWishlisted)
+  const toggleWishlist = () => {
+    setIsWishlisted(!isWishlisted);
+    // Optional: integrate with wishlist Redux store
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-300">
@@ -77,9 +117,9 @@ const ProductListView = ({ product }) => {
           {/* Price and Rating */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-gray-900">${currentPrice.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-gray-900">Rs. {currentPrice.toFixed(2)}</span>
               {currentVariant && currentVariant.price !== product.price && (
-                <span className="text-lg text-gray-500 line-through">${product.price.toFixed(2)}</span>
+                <span className="text-lg text-gray-500 line-through">Rs. {product.price.toFixed(2)}</span>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -119,7 +159,7 @@ const ProductListView = ({ product }) => {
                   >
                     <div
                       className="w-full h-full rounded-full border border-gray-200"
-                      style={{ backgroundColor: variant.color.toLowerCase() }}
+                      style={{ backgroundColor: variant.color?.toLowerCase() }}
                     ></div>
                   </button>
                 ))}
@@ -178,7 +218,7 @@ const ProductListView = ({ product }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProductListView
+export default ProductListView;
