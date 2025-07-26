@@ -17,13 +17,15 @@ const UserSchema = new mongoose.Schema({
   },
   passwordHash: { type: String, required: true },
   phone: { type: String, required: true, match: /^\d{10}$/ },
-  role: {
-    type: String,
-    enum: ["customer", "vendor", "admin"],
-    default: "customer",
-  },
+role: {
+  type: [String],
+  enum: ["customer", "vendor", "admin"],
+  default: ["customer"],
+},
+
   profileImage: { type: String },
   createdAt: { type: Date, default: Date.now },
+  isActive: { type: Boolean, default: true },
 });
 
 export default mongoose.model("User", UserSchema);
