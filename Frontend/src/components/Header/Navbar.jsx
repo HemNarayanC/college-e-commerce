@@ -5,22 +5,39 @@ import { Link } from "react-router-dom";
 import NavigationMenu from "./NavigationMenu";
 import AuthMenu from "./AuthMenu";
 import IconBadge from "../IconBadge";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCategories } from "../../api/categoryApi";
+import CartSidebar from "../cart/cartSidebar";
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const result = await getCategories();
+        setCategories(result);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   return (
-    <div className="bg-[#FBF9F7]">
-      <TopHeader />
+    <div className="bg-[#FBF9F7] relative right-1 z-50">
+      {/* <TopHeader /> */}
 
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           {/* Brand */}
           <div className="text-2xl font-bold text-[#6D9886]">
-            <Link to="#" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-2">
               <FaStore />
-              <span>NepalMart</span>
+              <span>NivaSa</span>
             </Link>
           </div>
 
@@ -33,15 +50,17 @@ const Navbar = () => {
                   <span className="truncate">Categories</span>
                   <FaChevronDown />
                 </button>
-                <div className="absolute left-0 mt-2 w-48 bg-white shadow-lg rounded-md hidden group-hover:block z-10">
+                <div className="absolute left-0 mt-0 w-50 bg-white shadow-sm rounded-md hidden group-hover:block z-50">
                   <div className="py-1 max-h-60 overflow-y-auto">
-                    <Link
-                      key=""
-                      to="#"
-                      className="block px-4 py-2 text-sm text-[#2C2C2C] hover:bg-[#F2E7D5]"
-                    >
-                      <p>All Categories</p>
-                    </Link>
+                    {categories.map((cat) => (
+                      <Link
+                        key={cat._id}
+                        to={`/category/${cat._id}`}
+                        className="block px-4 py-2 text-sm text-[#2C2C2C] hover:bg-[#F2E7D5]"
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -64,24 +83,26 @@ const Navbar = () => {
 
           {/* Icons */}
           <div className="flex items-center space-x-6">
-            <IconBadge
+            {/* <IconBadge
               icon={<FaHeart />}
               label="Wishlist"
-              count={10}
+              count="0"
               badgePosition="-right-2"
-            />
+            /> */}
             <IconBadge
               icon={<FaCartShopping />}
               label="Cart"
-              count={10}
               badgePosition="-right-4"
+              onClick={() => setIsCartOpen(true)}
             />
+
             <AuthMenu />
           </div>
         </div>
       </div>
 
       <NavigationMenu />
+      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 };
