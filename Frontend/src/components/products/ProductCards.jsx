@@ -1,4 +1,3 @@
-// src/components/ProductCards.jsx
 import { useState } from "react";
 import { FaHeart, FaShoppingCart, FaStar, FaEye } from "react-icons/fa";
 import { MdBalance } from "react-icons/md";
@@ -16,9 +15,13 @@ import { addToCart } from "../../api/cartApi";
 import { useNavigate } from "react-router-dom";
 import { SHOP_ROUTE } from "../../constants/routes";
 
-const ProductCards = ({ product, isLoggedIn }) => {
+const ProductCards = ({ product }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.auth_token);
+  const user = useSelector((state) => state.auth.user);
+  console.log("Hello User = ", user);
+
+  const isLoggedIn = useSelector((state) => state.auth.isAuthenticated);
   const compareList = useSelector((state) => state.compare.compareList);
   const wishlistItems = useSelector((state) => state.wishlist.items);
 
@@ -35,7 +38,7 @@ const ProductCards = ({ product, isLoggedIn }) => {
   const currentVariant =
     selectedVariantIndex !== null
       ? product.variants[selectedVariantIndex]
-      : product.variants[0]; // default first variant if none selected
+      : null;
 
   const currentPrice = currentVariant?.price ?? product.price;
   const currentStock = currentVariant?.stock ?? product.stock;
@@ -53,8 +56,10 @@ const ProductCards = ({ product, isLoggedIn }) => {
     }
 
     try {
-       const variantIdToSend =
-      selectedVariantIndex !== null ? product.variants[selectedVariantIndex]._id : null;
+      const variantIdToSend =
+        selectedVariantIndex !== null
+          ? product.variants[selectedVariantIndex]._id
+          : null;
       await addToCart({
         token,
         productId: product._id,
@@ -63,7 +68,7 @@ const ProductCards = ({ product, isLoggedIn }) => {
       });
 
       toast.success(
-        `${product.name} (${currentVariant.color}) added to cart!`,
+        `${product.name}${currentVariant ? ` (${currentVariant.color})` : ""} added to cart!`,
         {
           position: "top-right",
           autoClose: 2000,
@@ -197,11 +202,11 @@ const ProductCards = ({ product, isLoggedIn }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-gray-900">
-              ${currentPrice.toFixed(2)}
+              Rs. {currentPrice.toFixed(2)}
             </span>
             {currentVariant && currentVariant.price !== product.price && (
               <span className="text-sm text-gray-500 line-through">
-                ${product.price.toFixed(2)}
+                Rs. {product.price.toFixed(2)}
               </span>
             )}
           </div>
@@ -232,7 +237,7 @@ const ProductCards = ({ product, isLoggedIn }) => {
         </div>
 
         {/* Color Variants */}
-        {product.variants.length > 1 && (
+        {product.variants.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700">Colors:</p>
             <div className="flex gap-2">
