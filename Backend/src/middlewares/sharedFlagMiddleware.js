@@ -1,20 +1,18 @@
-
 import jwt from "jsonwebtoken";
 
-// middlewares/authenticateUserOrVendor.js
 const authenticateUserOrVendor = (req, res, next) => {
-  const token = req.cookies?.userToken; // ⬅️ Read from cookie
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : req.cookies?.userToken;
 
   if (!token) {
-    return res.status(401).json({ message: "Authentication token missing in cookie" });
+    return res.status(401).json({ message: "Authentication token missing" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // ⬅️ Attach user data to req
-    console.log("Authenticated user or vendor:", req.user); // ⬅️ Log for debugging
+    req.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };

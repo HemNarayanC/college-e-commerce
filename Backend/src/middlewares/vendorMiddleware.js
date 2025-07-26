@@ -31,7 +31,7 @@ const authenticateVendor = async (req, res, next) => {
       !user ||
       !user.role ||
       !Array.isArray(user.role) ||
-      !user.role.includes("vendor")git 
+      !user.role.includes("vendor")
     ) {
       return res.status(403).json({ error: "Access denied. Vendors only." });
     }
