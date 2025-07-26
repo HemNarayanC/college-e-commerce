@@ -3,7 +3,8 @@ import notificationService from "../services/notificationService.js";
 
 const getUserNotifications = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
+    console.log("User Id", userId)
     const notifications = await notificationService.getUserNotifications(
       userId
     );
@@ -16,9 +17,11 @@ const getUserNotifications = async (req, res) => {
 const getVendorNotifications = async (req, res) => {
   try {
     const vendorId = req.user.vendorId;
+    console.log("VendorId ==> ",vendorId)
     const notifications = await notificationService.getVendorNotifications(
       vendorId
     );
+    console.log(notifications)
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ error: err.message });
