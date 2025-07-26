@@ -7,6 +7,7 @@ import LoadingSpinner from "../shop/LoaderSpinner";
 const Dashboard = () => {
   const token = useSelector((state) => state.auth.auth_token);
   const user = useSelector((state) => state.auth.user);
+  console.log("Dashboard rendered, token:", token, "user:", user);
 
   if (!token || !user) {
     return (
@@ -16,11 +17,11 @@ const Dashboard = () => {
     );
   }
 
-  if (user.role === "admin") {
+  if (user.role.includes("admin")) {
     return <AdminDashboard />;
   }
 
-  if (user.role === "vendor") {
+  if (user.role.includes("vendor")) {
     return <VendorDashboard />;
   }
 
