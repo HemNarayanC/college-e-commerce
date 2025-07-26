@@ -18,7 +18,7 @@ import ShopPage from "./pages/shop/ShopPage";
 import VendorStoreFront from "./pages/vendor/VendorStoreFront";
 import SingleProductPage from "./pages/SingleProductPage";
 import DashboardPage from "./pages/Dashboard";
-import SettingsPage from "./components/Dashboard/Settings"; 
+import SettingsPage from "../src/components/Dashboard/Settings";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProfilePage from "./components/Dashboard/Profile";
 import CheckoutPage from "./pages/CheckOut";
