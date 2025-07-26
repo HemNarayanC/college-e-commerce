@@ -157,7 +157,7 @@ const OrderDetailsModal = ({
           </div>
 
           {/* Items Table or Confirm Delivery based on role */}
-          {userRole === "vendor" && (
+          {userRole.includes("vendor") && (
             <div>
               <h4 className="text-base font-semibold text-gray-900 mb-3">
                 Items & Status
@@ -252,7 +252,7 @@ const OrderDetailsModal = ({
             </div>
           )}
 
-          {userRole === "admin" && (
+          {userRole.includes("admin") && (
             <div className="p-4">
               <h4 className="text-lg font-semibold mb-3">
                 Confirm Delivery per Item
