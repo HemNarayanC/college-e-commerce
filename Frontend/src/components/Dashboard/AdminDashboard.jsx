@@ -33,6 +33,7 @@ import { toast } from "react-toastify";
 import CustomerDetailsModal from "../modals/CustomerDetailsModal";
 import VendorDetailsModal from "../modals/VendorDetailsModal";
 import { toggleCustomerStatus, updateVendorStatus } from "../../api/authApi";
+import { VENDOR_REGISTER_ROUTE } from "../../constants/routes";
 
 const AdminDashboard = () => {
   const token = useSelector((state) => state.auth.auth_token);
@@ -60,7 +61,7 @@ const AdminDashboard = () => {
   function formatPercentageChange(change) {
     if (change === undefined || change === null) return null;
     const sign = change > 0 ? "+" : "";
-    return `${sign}${change}%`;
+    return `${sign}${change}`;
   }
 
   const openOrderDetails = (order) => {
@@ -147,7 +148,11 @@ const AdminDashboard = () => {
 
   try {
     await toggleCustomerStatus(customerId, newStatus, token);
-    toast.success(`Customer status updated to ${newStatus ? "Active" : "Inactive"}`);
+    if (newStatus) {
+      toast.success("Customer activated successfully.");
+    } else {
+      toast.error("Customer deactivated.");
+    }
 
     // Immediately update local customers state to reflect change in UI
     setCustomers((prevCustomers) =>
@@ -257,7 +262,7 @@ const AdminDashboard = () => {
               <StatCard
                 icon={FaUsers}
                 title="Total Customers"
-                value={(stats?.totalCustomers ?? 0).toLocaleString()}
+                value={(stats?.totalCustomers ?? 0)?.toLocaleString()}
                 change={formatPercentageChange(
                   stats?.customersPercentageChange
                 )}
@@ -266,7 +271,7 @@ const AdminDashboard = () => {
               <StatCard
                 icon={FaStore}
                 title="Active Vendors"
-                value={(stats?.activeVendors ?? 0).toLocaleString()}
+                value={(stats?.activeVendors ?? 0)?.toLocaleString()}
                 change={formatPercentageChange(
                   stats?.activeVendorsPercentageChange
                 )}
@@ -364,7 +369,7 @@ const AdminDashboard = () => {
                 </Link>
 
                 <Link
-                  to="/vendors/add"
+                  to={VENDOR_REGISTER_ROUTE}
                   className="flex flex-col items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg hover:shadow-md transition-all duration-200"
                 >
                   <FaStore className="w-6 h-6 text-green-600 mb-2" />
@@ -632,7 +637,7 @@ const AdminDashboard = () => {
                           {vendor.totalProducts}
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-[#486e40] whitespace-nowrap">
-                          {vendor.totalSales.toLocaleString()}
+                          {vendor.totalSales?.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -816,10 +821,10 @@ const AdminDashboard = () => {
                         {order.paymentMethod}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                        Rs. {order.totalAmount.toLocaleString()}
+                        Rs. {order.totalAmount?.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {new Date(order.orderDate).toLocaleDateString()}
+                        {new Date(order.orderDate)?.toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -1078,7 +1083,7 @@ const AdminDashboard = () => {
                       {/* Review Comment */}
                       <p className="text-gray-700 mb-3">{review.comment}</p>
                       <p className="text-sm text-gray-500">
-                        Posted on {new Date(review.createdAt).toLocaleString()}
+                        Posted on {new Date(review.createdAt)?.toLocaleString()}
                       </p>
 
                       {/* Flags with Dropdown */}
@@ -1113,7 +1118,7 @@ const AdminDashboard = () => {
                                 <li key={flag._id}>
                                   {flag.reason} —{" "}
                                   <span className="text-gray-500 text-xs">
-                                    {new Date(flag.createdAt).toLocaleString()}
+                                    {new Date(flag.createdAt)?.toLocaleString()}
                                   </span>
                                 </li>
                               ))}
@@ -1155,13 +1160,13 @@ const AdminDashboard = () => {
                       Rs.{" "}
                       {(
                         stats.lifetimeSales - stats.platformEarnings
-                      ).toLocaleString()}
+                      )?.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                     <span className="text-gray-600">Platform Fees</span>
                     <span className="font-bold text-purple-600">
-                      Rs. {stats.platformEarnings.toLocaleString()}
+                      Rs. {stats.platformEarnings?.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border-t-2 border-green-200">
@@ -1169,7 +1174,7 @@ const AdminDashboard = () => {
                       Total Revenue
                     </span>
                     <span className="font-bold text-green-600 text-lg">
-                      Rs. {stats.lifetimeSales.toLocaleString()}
+                      Rs. {stats.lifetimeSales?.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1186,13 +1191,13 @@ const AdminDashboard = () => {
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <p className="text-2xl font-bold text-green-600">
-                      {stats.averageOrderValue.toLocaleString()}
+                      {stats.averageOrderValue?.toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-600">Avg Order Value</p>
                   </div>
                   <div className="text-center p-3 bg-purple-50 rounded-lg">
                     <p className="text-2xl font-bold text-purple-600">
-                      {stats.aovGrowth.toFixed(2)}%
+                      {stats.aovGrowth?.toFixed(2)}%
                     </p>
                     <p className="text-sm text-gray-600">Monthly Growth</p>
                   </div>
