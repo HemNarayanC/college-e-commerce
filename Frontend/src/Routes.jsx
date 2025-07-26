@@ -1,41 +1,84 @@
 import { createBrowserRouter } from "react-router-dom";
-import { ABOUT_ROUTE, CONTACT_ROUTE, LOGIN_ROUTE, REGISTER_ROUTE, SHOP_ROUTE } from "./constants/routes";
+import {
+  ABOUT_ROUTE,
+  CONTACT_ROUTE,
+  PROFILE_SETTINGS,
+  SHOP_ROUTE,
+  USER_PROFILE,
+  VENDOR_FRONT_STORE_ROUTE,
+  VENDOR_REGISTER_ROUTE,
+} from "./constants/routes";
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
 import PageNotFound from "./pages/PageNotFound";
+import About from "./pages/About";
+import VendorRegistration from "./pages/vendor/VendorRegistration";
 import AuthLayout from "./layouts/AuthLayout";
-import UnAuthLayout from "./layouts/UnAuthLayout";
+import ShopPage from "./pages/shop/ShopPage";
+import VendorStoreFront from "./pages/vendor/VendorStoreFront";
+import SingleProductPage from "./pages/SingleProductPage";
+import DashboardPage from "./pages/Dashboard";
+import SettingsPage from "./components/Dashboard/Settings"; 
+import DashboardLayout from "./layouts/DashboardLayout";
+import ProfilePage from "./components/Dashboard/Profile";
+import CheckoutPage from "./pages/CheckOut";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <MainLayout />,
     errorElement: <PageNotFound />,
     children: [
       {
         children: [
           { index: true, element: <Home /> },
-          { path: ABOUT_ROUTE, element: (<h1>About</h1>) },
-          { path: CONTACT_ROUTE, element: (<h1>Contact</h1>) },
+          { path: ABOUT_ROUTE, element: <About /> },
+          { path: CONTACT_ROUTE, element: <h1>Contact</h1> },
           {
             path: SHOP_ROUTE,
             children: [
-              { index: true, element: (<h1>Shop</h1>) },
-              { path: 'add', element: (<h1>Add Product</h1>) },
-              { path: ':product_id', element: (<h1>Product Details</h1>) },
+              { index: true, element: <ShopPage /> },
+              { path: "add", element: <h1>Add Product</h1> },
+              { path: "products/:productId", element: <SingleProductPage /> },
             ],
           },
+          {
+            element: <AuthLayout />,
+            children: [
+              { path: VENDOR_REGISTER_ROUTE, element: <VendorRegistration /> },
+              {
+                path: `${VENDOR_FRONT_STORE_ROUTE}/:vendorId`,
+                element: <VendorStoreFront />,
+              },
+              { path: PROFILE_SETTINGS, element: <SettingsPage /> },
+              { path: USER_PROFILE, element: <ProfilePage /> },
+
+            ],
+          },
+          { path: "/checkout", element: <CheckoutPage /> },
+          { path: "/payment/success", element: <PaymentSuccess /> },
+
         ],
       },
     ],
   },
   {
+    path: "/dashboard",
+    element: <DashboardLayout />,
     children: [
-      { path: LOGIN_ROUTE, element: <h1>Login</h1> },
-      { path: REGISTER_ROUTE , element: <h1>Register</h1> },
+      {index: true, element: <DashboardPage />},
     ],
   },
-  { path: '*', element: <PageNotFound /> },
+  // {
+  //   path: "/",
+  //   element: <AuthLayout />,
+  //   children: [
+  //     { path: LOGIN_ROUTE, element: <Login /> },
+  //     { path: REGISTER_ROUTE, element: <Register /> },
+  //   ],
+  // },
+  { path: "*", element: <PageNotFound /> },
 ]);
 
 export default router;
