@@ -3,7 +3,7 @@ import { FaEye } from "react-icons/fa";
 import { IoMdClose } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
 import { removeFromCompare } from "../redux/product/compareProduct";
-import CompareModal from "./Modal/compareModal";
+import CompareModal from "./modals/compareModal";
 
 const CompareBarAndModal = () => {
   const dispatch = useDispatch();
