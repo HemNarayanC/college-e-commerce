@@ -19,22 +19,10 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
-const allowedOrigins = [
-  process.env.CLIENT_URL_1,
-  process.env.CLIENT_URL_2,
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
+  origin: "https://nivasa-au9r.onrender.com",
+  credentials: true
 }));
-
 
 app.use(express.json({
   limit: '10mb' // Increase the limit to 50mb
