@@ -22,17 +22,7 @@ dotenv.config();
 
 const allowedOrigins = process.env.CLIENT_URLS?.split(",").map(url => url.trim());
 console.log("Allowed Origins:", allowedOrigins);
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-}));
+app.use(cors());
 
 app.use(express.json({
   limit: '10mb' // Increase the limit to 50mb
