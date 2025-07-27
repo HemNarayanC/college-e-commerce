@@ -20,7 +20,7 @@ import cookieParser from "cookie-parser";
 const app = express();
 
 app.use(cors({
-  origin: "https://nivasa-au9r.onrender.com",
+  origin: "https://college-e-commerce.vercel.app",
   credentials: true
 }));
 
