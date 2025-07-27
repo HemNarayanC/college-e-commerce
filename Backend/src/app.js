@@ -19,9 +19,18 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
+const allowedOrigins = process.env.CLIENT_URLS?.split(",").map(url => url.trim());
+
 app.use(cors({
-  origin: "https://college-e-commerce.vercel.app",
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow tools like Postman
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
 }));
 
 app.use(express.json({
