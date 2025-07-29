@@ -21,10 +21,10 @@ const DashboardHeader = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        if (user?.role === "customer" && !vendor) {
+        if (user?.role.includes("customer") && !vendor) {
           const data = await getCustomerNotifications(auth_token);
           setNotifications(data || []);
-        } else if (user.role === "vendor" && vendor) {
+        } else if (user.role.includes("vendor") && vendor) {
           console.log("Hello Vendor")
           const data = await getVendorNotifications(auth_token);
           setNotifications(data || []);
