@@ -22,6 +22,7 @@ const DashboardHeader = () => {
     const fetchNotifications = async () => {
       try {
         if (user?.role.includes("customer") && !vendor) {
+          console.log(user.role, "Hello Customer")
           const data = await getCustomerNotifications(auth_token);
           setNotifications(data || []);
         } else if (user.role.includes("vendor") && vendor) {
