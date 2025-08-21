@@ -141,6 +141,7 @@ const toggleProductStatus = async (req, res) => {
 const searchProductsController = async (req, res) => {
   try {
     const queryString = req.query.q || ""; // search keywords from query param `q`
+    console.log("Search query:", queryString);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
