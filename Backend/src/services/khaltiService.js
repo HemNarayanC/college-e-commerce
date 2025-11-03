@@ -10,8 +10,8 @@ export const initiateKhaltiPayment = async ({ amount, products, user }) => {
   console.log("User is ", user);
 
   const payload = {
-    return_url: "http://localhost:3000/payment/success",
-    website_url: "http://localhost:3000",
+    return_url: "https://college-e-commerce.vercel.app/payment/success",
+    website_url: "https://college-e-commerce.vercel.app/",
     amount: amountPaisa,
     purchase_order_id: purchaseOrderId,
     purchase_order_name: products.map((p) => p.name).join(", "),
